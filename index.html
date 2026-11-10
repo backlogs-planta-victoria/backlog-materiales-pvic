@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Backlog de Materiales PVIC</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root {
+    --color-bg: #fbfaf7; --color-panel: #ffffff; --color-fg: #1f1e1b; --color-fg-muted: #6b6860; --color-border-line: #e3e0d8;
+    --color-ok: #1e8449; --color-warn: #c27c0e; --color-bad: #c0392b;
+    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-anthropic-serif: Georgia, "Times New Roman", serif;
+    --cds-font-size-caption: 12.5px; --cds-font-size-body: 15px; --cds-font-size-heading: 16px; --cds-font-size-title: 30px; --cds-font-weight-medium: 600;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 12px; --cds-gap-lg: 16px; --cds-gap-xl: 28px;
+    --cds-pad-sm: 8px; --cds-pad-lg: 16px; --cds-radius: 8px;
+    --cds-chart-muted: #a7a399; --cds-chart-grid: #ece9e2; --cds-chart-axis: #cfcbc1; --cds-chart-reference: #6b6860; --cds-chart-status-critical: #d35400;
+    --cds-text-secondary: #6b6860; --cds-surface-popover: #ffffff; --cds-border: #d9d5cc; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.12);
+    --serie-0: #2f6db5; --serie-1: #7a4fd6; --serie-2: #1f9e89; --serie-3: #c94f7c; --serie-4: #8a8a8a;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-bg: #1b1b19; --color-panel: #242422; --color-fg: #eceae4; --color-fg-muted: #a5a29a; --color-border-line: #3a3936;
+      --color-ok: #4cb37a; --color-warn: #e0a33a; --color-bad: #e2675a;
+      --cds-chart-muted: #77746d; --cds-chart-grid: #33322f; --cds-chart-axis: #4a4945; --cds-chart-reference: #a5a29a; --cds-chart-status-critical: #e8803a;
+      --cds-text-secondary: #a5a29a; --cds-surface-popover: #2c2c2a; --cds-border: #45443f; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.5);
+      --serie-0: #6aa2e8; --serie-1: #a58bf0; --serie-2: #4cc3ad; --serie-3: #e07fa5;
+      color-scheme: dark;
+    }
+  }
+  html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); }
+  #dash-root { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; box-sizing: border-box; }
+  #dash-root * { box-sizing: border-box; }
+  .dash-select { font: inherit; font-size: var(--cds-font-size-caption); color: var(--color-fg); background-color: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 6px 8px; }
+  .dash-skeleton { position: relative; color: transparent !important; }
+  .dash-skeleton::after { content: ""; position: absolute; inset: 0; border-radius: 4px; background: var(--color-border-line); opacity: .6; }
+  .gate { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--color-bg); }
+  .gate[hidden] { display: none; }
+  .gate form { width: 100%; max-width: 380px; background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .gate h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 24px; margin: 0; }
+  .gate p { margin: 0; font-size: 14px; color: var(--color-fg-muted); line-height: 1.45; }
+  .gate input[type=password] { font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--color-border-line); background: var(--color-bg); color: var(--color-fg); }
+  .gate label { font-size: 13px; color: var(--color-fg-muted); display: flex; gap: 8px; align-items: center; }
+  .gate button { font: inherit; font-size: 15px; padding: 10px 14px; border-radius: 8px; border: 0; background: var(--color-fg); color: var(--color-bg); cursor: pointer; }
+  .gate button:disabled { opacity: .6; cursor: progress; }
+  .gate .err { color: var(--color-bad); font-size: 13px; min-height: 1.2em; }
+  .salir { font: inherit; font-size: 12px; background: none; border: 0; color: var(--color-fg-muted); text-decoration: underline; cursor: pointer; padding: 0; }
+</style>
+</head>
+<body>
+<div class="gate" id="gate">
+  <form id="gate-form" autocomplete="off">
+    <h1>Backlog de materiales · PVIC</h1>
+    <p>Los datos están cifrados. Escriba la contraseña de la página para verlos.</p>
+    <input type="password" id="gate-pwd" placeholder="Contraseña" aria-label="Contraseña" autofocus>
+    <label><input type="checkbox" id="gate-rec"> Recordar en este equipo</label>
+    <button type="submit" id="gate-btn">Ver datos</button>
+    <div class="err" id="gate-err" role="alert"></div>
+  </form>
+</div>
+<script>
+  // ---------- reemplazo mínimo de la API "dash" del tablero de Claude ----------
+  (function () {
+    const draws = new Map(), calcs = new Map();
+    let ds = { status: 'loading', data: [] }, params = {}, cacheCalc = new Map();
+    const css = (n) => `var(--serie-${n})`;
+    window.dash = {
+      colors: [0, 1, 2, 3, 4].map(css),
+      data(id) {
+        if (id === 'materiales') return ds;
+        if (calcs.has(id)) {
+          if (ds.status !== 'ok') return { status: ds.status, data: null };
+          if (!cacheCalc.has(id)) cacheCalc.set(id, calcs.get(id).fn(ds.data));
+          return { status: 'ok', data: cacheCalc.get(id) };
+        }
+        return { status: 'missing', data: null };
+      },
+      calc(id, o) { calcs.set(id, o); },
+      loader() {},
+      draw(name, fn) {
+        if (fn) draws.set(name, typeof fn === 'function' ? fn : (el) => (fn.update || fn.mount)(el));
+        const f = draws.get(name);
+        if (!f) return;
+        document.querySelectorAll(`[data-draw="${name}"]`).forEach((el) => {
+          if (el.closest('[hidden]') && !el.closest('.gate')) { /* sigue dibujando: la página no usa secciones ocultas */ }
+          try { f(el); } catch (e) { console.error(name, e); }
+        });
+      },
+      params() { return params; },
+      setParams(o) { params = Object.assign({}, params, o); },
+      resetParams() { params = {}; },
+      setLink() {}, onData() {}, refresh() {},
+      _cargar(rows) { ds = { status: 'ok', data: rows }; cacheCalc = new Map(); dash._todo(); },
+      _error() { ds = { status: 'error', data: [] }; dash._todo(); },
+      _todo() { draws.forEach((_, n) => dash.draw(n)); },
+    };
+    let w = 0;
+    window.addEventListener('resize', () => { if (Math.abs(window.innerWidth - w) > 20) { w = window.innerWidth; dash._todo(); } });
+  })();
+</script>
+<div id="dash-root">
+<style>
+  .bk { display: flex; flex-direction: column; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+  .bk-head { display: flex; flex-direction: column; gap: var(--cds-gap-sm); max-width: 74ch; }
+  .bk-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); line-height: 1.15; margin: 0; text-wrap: balance; }
+  .bk-lead { font-size: var(--cds-font-size-body); line-height: 1.55; margin: 0; }
+  .bk-lead b { font-variant-numeric: tabular-nums; }
+  .bk-meta { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; }
+
+  .bk-bar { position: sticky; top: 0; z-index: 6; background: var(--color-bg); border-bottom: 1px solid var(--color-border-line); padding: var(--cds-pad-sm) 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--cds-gap-sm); }
+  .bk-bar label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); display: flex; align-items: center; gap: 6px; }
+  .bk-search { font: inherit; font-size: var(--cds-font-size-caption); color: var(--color-fg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 6px 10px; min-width: 0; width: 230px; max-width: 100%; }
+  .bk-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1 1 200px; min-width: 0; }
+  .bk-chip { font: inherit; font-size: var(--cds-font-size-caption); display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--color-fg-muted); background: var(--color-panel); color: var(--color-fg); cursor: pointer; }
+  .bk-chip:hover { border-color: var(--color-fg); }
+  .bk-chip .x { color: var(--color-fg-muted); }
+  .bk-count { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+  .bk-btn { font: inherit; font-size: var(--cds-font-size-caption); padding: 5px 12px; border-radius: var(--cds-radius); border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); cursor: pointer; }
+  .bk-btn:hover { border-color: var(--color-fg-muted); }
+  .bk-btn[hidden] { display: none; }
+
+  .bk-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--cds-gap-md); }
+  .bk-kpi { font: inherit; text-align: left; color: inherit; cursor: pointer; background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: flex; flex-direction: column; gap: var(--cds-gap-xs); min-width: 0; }
+  .bk-kpi:hover { border-color: var(--color-fg-muted); }
+  .bk-kpi.is-on { outline: 2px solid var(--color-fg); outline-offset: -2px; }
+  .bk-kpi-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); letter-spacing: .02em; }
+  .bk-kpi-num { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 2.1rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .bk-kpi-note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+  .bk-kpi.is-bad { box-shadow: inset 4px 0 0 var(--color-bad); }
+  .bk-kpi.is-warn { box-shadow: inset 4px 0 0 var(--color-warn); }
+
+  .bk-h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .bk-sechead { display: flex; flex-direction: column; gap: 4px; }
+  .bk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--cds-gap-lg); }
+  .bk-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: flex; flex-direction: column; gap: var(--cds-gap-sm); min-width: 0; }
+  .bk-card h2, .bk-card h3 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; text-wrap: balance; }
+  .bk-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; line-height: 1.45; }
+  .bk-chart { position: relative; min-height: 220px; width: 100%; }
+  .bk-chart.tall { min-height: 300px; }
+  .bk-chart svg { display: block; overflow: visible; }
+  .bk-chart text { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+  .bk-chart .bk-val { fill: var(--color-fg); font-variant-numeric: tabular-nums; }
+  .bk-chart .tick line { stroke: var(--cds-chart-grid); }
+  .bk-chart .domain { stroke: var(--cds-chart-axis); }
+  .bk-chart .clic { cursor: pointer; }
+  .bk-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); padding: 6px 9px; font-size: var(--cds-font-size-caption); color: var(--color-fg); line-height: 1.4; max-width: 260px; z-index: 5; }
+  .bk-tip[hidden] { display: none; }
+  .bk-tip .h { font-weight: 600; }
+  .bk-tip .c { color: var(--cds-text-secondary); }
+
+  .bk-pie { display: flex; flex-wrap: wrap; align-items: center; gap: var(--cds-gap-lg); }
+  .bk-pie > svg { flex: 0 0 auto; }
+  .bk-legend { flex: 1 1 170px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .bk-leg { font: inherit; font-size: var(--cds-font-size-caption); color: var(--color-fg); background: none; border: 1px solid transparent; border-radius: var(--cds-radius); display: grid; grid-template-columns: 12px 1fr auto auto; gap: 8px; align-items: center; padding: 4px 6px; cursor: pointer; text-align: left; }
+  .bk-leg:hover { border-color: var(--color-border-line); }
+  .bk-leg.is-on { border-color: var(--color-fg); }
+  .bk-leg.is-off { opacity: .45; }
+  .bk-leg .sw { width: 10px; height: 10px; border-radius: 2px; }
+  .bk-leg .n { font-variant-numeric: tabular-nums; text-align: right; }
+  .bk-leg .p { font-variant-numeric: tabular-nums; text-align: right; color: var(--color-fg-muted); min-width: 3.2em; }
+
+  .bk-tablewrap { overflow-x: auto; }
+  .bk-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+  .bk-table th { text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .bk-table th.ord { cursor: pointer; user-select: none; }
+  .bk-table th.ord:hover { color: var(--color-fg); }
+  .bk-table th[aria-sort=descending]::after { content: " ▼"; }
+  .bk-table th[aria-sort=ascending]::after { content: " ▲"; }
+  .bk-table td { padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
+  .bk-table td.num, .bk-table th.num { text-align: right; }
+  .bk-table td.w { min-width: 16ch; }
+  .bk-pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: var(--cds-font-size-caption); white-space: nowrap; border: 1px solid currentColor; }
+  .bk-pill.rojo { color: var(--color-bad); }
+  .bk-pill.ambar { color: var(--color-warn); }
+  .bk-pill.verde { color: var(--color-ok); }
+  .bk-pill.otro { color: var(--color-fg-muted); }
+  .bk-note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; }
+
+  .bk-foot { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .bk-foot summary { cursor: pointer; }
+  .bk-foot dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: var(--cds-gap-sm) 0 0; }
+  .bk-foot dt { font-weight: var(--cds-font-weight-medium); color: var(--color-fg); }
+  .bk-foot dd { margin: 0; }
+  [data-dash-source-state=refreshing] { opacity: .5; }
+  @media (max-width: 560px) { .bk-foot dl { grid-template-columns: 1fr; } .bk-search { width: 100%; } }
+</style>
+
+<div class="bk">
+  <header class="bk-head" id="resumen">
+    <h1 class="bk-title">Backlog de materiales · Planta Victoria</h1>
+    <p class="bk-lead" data-read lang="es">Hay <b data-draw="l-abiertas" data-source="kpis" data-field="abiertas" data-row="0">—</b> líneas de compra abiertas de un total de <b data-draw="l-total" data-source="kpis" data-field="total" data-row="0">—</b>. <b data-draw="l-sinoc" data-source="kpis" data-field="sin_oc" data-row="0">—</b> todavía no tienen OC, y <b data-draw="l-sinoc60" data-source="kpis" data-field="sin_oc_60" data-row="0">—</b> de ellas tienen la SolPed creada hace más de 60 días. <b data-draw="l-venc" data-source="kpis" data-field="oc_vencidas" data-row="0">—</b> OC tienen la fecha de entrega vencida, con un atraso máximo de <b data-draw="l-max" data-source="kpis" data-field="max_atraso" data-row="0">—</b> días.</p>
+    <p class="bk-meta">Datos SAP al <span data-draw="corte" data-source="kpis" data-field="corte" data-row="0">—</span> · OT con revisión BLC_PVIC y SolPed del Registro de backlog · ZPEMM070 (ACAR, PVIC, CTCA) · Haga clic en cualquier gráfico, porción o leyenda para filtrar toda la página.</p>
+  </header>
+
+  <div class="bk-bar" id="filtros" role="region" aria-label="Filtros">
+    <label>Ver
+      <select class="dash-select" id="sel-alcance" aria-label="Líneas a mostrar">
+        <option value="abiertas">Líneas abiertas</option>
+        <option value="todas">Todas (incluye entregadas y borradas)</option>
+      </select>
+    </label>
+    <input type="search" class="bk-search" id="buscar" placeholder="Buscar material, OT, SolPed, OC, equipo…" aria-label="Buscar">
+    <div class="bk-chips" data-draw="chips" aria-live="polite"></div>
+    <span class="bk-count" data-draw="conteo">—</span>
+    <button type="button" class="bk-btn" id="quitar" hidden>Quitar filtros</button>
+  </div>
+
+  <section class="bk-kpis" id="indicadores" aria-label="Indicadores de la selección">
+    <button type="button" class="bk-kpi" id="kpi-abiertas" data-grupo="">
+      <span class="bk-kpi-label">Líneas abiertas</span>
+      <span class="bk-kpi-num" data-draw="k-abiertas" data-source="kpis" data-field="abiertas" data-row="0">—</span>
+      <span class="bk-kpi-note">sin entrega final ni borrado</span>
+    </button>
+    <button type="button" class="bk-kpi is-warn" id="kpi-sinoc" data-grupo="sin_oc">
+      <span class="bk-kpi-label">Sin OC</span>
+      <span class="bk-kpi-num" data-draw="k-sinoc" data-source="kpis" data-field="sin_oc" data-row="0">—</span>
+      <span class="bk-kpi-note">Desde la SolPed: mediana <span data-draw="k-sinoc-med" data-source="kpis" data-field="mediana_sin_oc" data-row="0">—</span> d · máx. <span data-draw="k-sinoc-max" data-source="kpis" data-field="max_sin_oc" data-row="0">—</span> d</span>
+    </button>
+    <button type="button" class="bk-kpi is-bad" id="kpi-sinoc60" data-grupo="sin_oc_60">
+      <span class="bk-kpi-label">Sin OC hace más de 60 días</span>
+      <span class="bk-kpi-num" data-draw="k-sinoc60" data-source="kpis" data-field="sin_oc_60" data-row="0">—</span>
+      <span class="bk-kpi-note">SolPed creada hace más de 60 días y aún sin OC</span>
+    </button>
+    <button type="button" class="bk-kpi is-bad" id="kpi-vencidas" data-grupo="oc_vencida">
+      <span class="bk-kpi-label">OC vencidas</span>
+      <span class="bk-kpi-num" data-draw="k-venc" data-source="kpis" data-field="oc_vencidas" data-row="0">—</span>
+      <span class="bk-kpi-note">Atraso: mediana <span data-draw="k-med" data-source="kpis" data-field="mediana_atraso" data-row="0">—</span> d · máx. <span data-draw="k-max" data-source="kpis" data-field="max_atraso" data-row="0">—</span> d</span>
+    </button>
+    <button type="button" class="bk-kpi" id="kpi-pronto" data-grupo="llega_pronto">
+      <span class="bk-kpi-label">Llegan en 7 días o menos</span>
+      <span class="bk-kpi-num" data-draw="k-pronto" data-source="kpis" data-field="llega_pronto" data-row="0">—</span>
+      <span class="bk-kpi-note">según la fecha comprometida de la OC</span>
+    </button>
+  </section>
+
+  <section class="bk-grid" id="distribucion">
+    <article class="bk-card" id="card-responsable">
+      <h2>¿Quién tiene que actuar?</h2>
+      <p class="bk-sub">Responsable de la etapa en la que está cada línea. Haga clic en una porción para ver sus líneas abajo.</p>
+      <div class="bk-chart" data-draw="pie-responsable" data-source="materiales" role="img" aria-label="Gráfico circular de líneas por responsable"></div>
+    </article>
+    <article class="bk-card" id="card-semaforo">
+      <h2>Semáforo</h2>
+      <p class="bk-sub">Rojo: OC vencida, o más de 60 días en la misma etapa. Ámbar: más de 30 días. Llega pronto: la OC vence en 7 días o menos.</p>
+      <div class="bk-chart" data-draw="pie-semaforo" data-source="materiales" role="img" aria-label="Gráfico circular de líneas por color de semáforo"></div>
+    </article>
+  </section>
+
+  <section class="bk-sechead" id="sin-oc">
+    <h2 class="bk-h2">Líneas sin OC: ¿cuánto llevan esperando?</h2>
+    <p class="bk-sub">Días desde que se creó la SolPed hasta la fecha de corte, para las líneas que aún no tienen pedido de compra. Sirve para saber a quién llamar y desde cuándo está detenido.</p>
+  </section>
+  <section class="bk-grid" id="sin-oc-graficos">
+    <article class="bk-card" id="card-sinoc-tramos">
+      <h3>Sin OC por responsable y días desde la SolPed</h3>
+      <p class="bk-sub">Jefatura: liberar la SolPed. Logística: crear la RLM. Compras: emitir la OC.</p>
+      <div class="bk-chart" data-draw="bar-sinoc" data-source="materiales" role="img" aria-label="Barras apiladas de líneas sin OC por responsable y días desde la SolPed"></div>
+    </article>
+    <article class="bk-card" id="card-sinoc-lista">
+      <h3>Las 10 líneas sin OC más antiguas</h3>
+      <p class="bk-sub">Ordenadas por días desde la SolPed. Respeta los filtros de arriba.</p>
+      <div class="bk-tablewrap">
+        <table class="bk-table" data-source="materiales" data-row-key="clave" aria-label="Líneas sin OC más antiguas">
+          <thead>
+            <tr>
+              <th data-field="solped">SolPed</th>
+              <th data-field="desc_material">Material</th>
+              <th data-field="responsable">Responsable</th>
+              <th class="num">Días desde SolPed</th>
+              <th class="num" data-field="dias_etapa">Días en etapa</th>
+              <th data-field="rlm">RLM</th>
+            </tr>
+          </thead>
+          <tbody data-draw="tabla-sinoc"></tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  <section class="bk-grid" id="etapas">
+    <article class="bk-card" id="card-estado">
+      <h2>Líneas por etapa de compra</h2>
+      <p class="bk-sub">De la SolPed recién creada (arriba) a la OC esperando entrega (abajo).</p>
+      <div class="bk-chart" data-draw="bar-estado" data-source="materiales" role="img" aria-label="Barras de líneas por etapa de compra"></div>
+    </article>
+    <article class="bk-card" id="card-aging">
+      <h2>Días en la etapa actual, por responsable</h2>
+      <p class="bk-sub">Cuánto lleva cada línea en la etapa en la que está ahora.</p>
+      <div class="bk-chart" data-draw="bar-aging" data-source="materiales" role="img" aria-label="Barras apiladas de días en la etapa por responsable"></div>
+    </article>
+  </section>
+
+  <article class="bk-card" id="card-fechas">
+    <h2>Fechas comprometidas de entrega por mes</h2>
+    <p class="bk-sub">OC abiertas según el mes de su fecha de entrega. A la izquierda de «Hoy», lo que debió llegar y no llegó. Haga clic en una columna para ver ese mes.</p>
+    <div class="bk-chart tall" data-draw="col-meses" data-source="materiales" role="img" aria-label="Columnas de OC abiertas por mes de entrega comprometida, vencidas y en plazo"></div>
+  </article>
+
+  <article class="bk-card" id="card-top">
+    <h2>Las 12 OC más atrasadas</h2>
+    <p class="bk-sub">Días entre la fecha comprometida y la fecha de corte. Haga clic en un punto para ver esa OC en la tabla.</p>
+    <div class="bk-chart tall" data-draw="top-atraso" data-source="materiales" role="img" aria-label="Barras de las OC con más días de atraso"></div>
+  </article>
+
+  <article class="bk-card" id="card-detalle">
+    <h2>Líneas de la selección</h2>
+    <p class="bk-sub">Todas las líneas que cumplen los filtros activos. Haga clic en un título de columna para ordenar.</p>
+    <div class="bk-tablewrap">
+      <table class="bk-table" id="tabla-detalle" data-source="materiales" data-row-key="clave" aria-label="Detalle de líneas de la selección">
+        <thead>
+          <tr>
+            <th class="ord" data-ord="ot" data-field="ot">OT</th>
+            <th class="ord" data-ord="equipo" data-field="equipo">Equipo</th>
+            <th class="ord" data-ord="material" data-field="material">Material</th>
+            <th class="ord" data-ord="desc_material" data-field="desc_material">Descripción</th>
+            <th class="ord num" data-ord="cantidad" data-field="cantidad">Cant.</th>
+            <th class="ord" data-ord="solped" data-field="solped">SolPed</th>
+            <th data-field="pos">Pos</th>
+            <th class="ord" data-ord="rlm" data-field="rlm">RLM</th>
+            <th class="ord" data-ord="oc" data-field="oc">OC</th>
+            <th class="ord" data-ord="estado" data-field="estado">Estado</th>
+            <th class="ord" data-ord="responsable" data-field="responsable">Responsable</th>
+            <th class="ord" data-ord="f_solped" data-field="f_solped">F. SolPed</th>
+            <th class="ord num" data-ord="dias_solped">Días desde SolPed</th>
+            <th class="ord num" data-ord="dias_etapa" data-field="dias_etapa">Días en etapa</th>
+            <th class="ord" data-ord="f_entrega" data-field="f_entrega">Entrega comprometida</th>
+            <th class="ord num" data-ord="dias_atraso" data-field="dias_atraso">Días de atraso</th>
+            <th class="ord" data-ord="prioridad" data-field="semaforo">Semáforo</th>
+          </tr>
+        </thead>
+        <tbody data-draw="tabla-detalle"></tbody>
+      </table>
+    </div>
+    <p class="bk-note" data-draw="nota-detalle"></p>
+  </article>
+
+  <details class="bk-foot" id="definiciones">
+    <summary>Cómo se calcula cada número (igual que en Power BI)</summary>
+    <dl>
+      <dt>Línea</dt><dd>Una posición de SolPed con su OC (si tiene). Clave: SolPed-Pos-OC.</dd>
+      <dt>Línea abierta</dt><dd>Estado distinto de «0. Borrado» y de «6. Entregado».</dd>
+      <dt>Sin OC</dt><dd>Estados 1, 2 y 3: liberación pendiente (Jefatura), RLM pendiente (Logística) u OC pendiente (Compras).</dd>
+      <dt>Días desde SolPed</dt><dd>Fecha de corte menos la fecha de creación de la SolPed. Mide cuánto lleva esperando la línea en total.</dd>
+      <dt>Días en etapa</dt><dd>Desde la creación de la SolPed, su liberación, la creación de la RLM o la fecha de la OC, según la etapa. Mide cuánto lleva detenida en el paso actual.</dd>
+      <dt>Días de atraso</dt><dd>Fecha de corte menos la fecha comprometida, solo para «5. OC vencida». La fecha la registra Compras y no siempre se actualiza: sirve como sustento para pedir revisión.</dd>
+      <dt>Umbrales</dt><dd>Ámbar más de 30 días, rojo más de 60, llega pronto 7 días: los de la hoja Parametros del Excel. Si allí cambian, el semáforo del Excel cambia; los títulos de esta página no.</dd>
+      <dt>No incluye</dt><dd>Proveedor, precios ni RUC, hasta que se valide compartirlos.</dd>
+    </dl>
+  </details>
+</div>
+
+<script>
+  // ---------- definiciones únicas (las mismas que las medidas DAX) ----------
+  const BK = window.BK = {};
+  BK.UMBRAL_SIN_OC = 60;     // días desde la SolPed; igual a Parametros!C6 (umbral rojo)
+  BK.RESP = ['Jefatura', 'Logística', 'Compras', 'Proveedor / Compras', 'Mantenimiento'];
+  BK.SEM = ['Rojo', 'Ámbar', 'Verde', 'Llega pronto', 'En plazo', 'Cerrado'];
+  BK.ESTADOS = ['1. Pendiente liberación Superintendente', '1. Pendiente liberación GGO', '2. Pendiente RLM (Logística)',
+    '3. Pendiente OC (Compras)', '4. OC en plazo', '5. OC vencida', '5. OC sin fecha de entrega', '6. Entregado', '0. Borrado'];
+  BK.TRAMOS = ['0–30 d', '31–60 d', '61–90 d', 'Más de 90 d'];
+  BK.tramo = (d) => (d === null ? null : d <= 30 ? BK.TRAMOS[0] : d <= 60 ? BK.TRAMOS[1] : d <= 90 ? BK.TRAMOS[2] : BK.TRAMOS[3]);
+  BK.num = (v) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? null : Number(v));
+  BK.dias = (a, b) => (a && b ? Math.round((Date.parse(String(a).slice(0, 10)) - Date.parse(String(b).slice(0, 10))) / 864e5) : null);
+
+  // Una fila del CSV con los campos derivados que también calcula la consulta de Power BI
+  BK.fila = (r) => {
+    const e = String(r.estado || '').trim(), et = e[0] || '';
+    const abierta = e !== '' && et !== '0' && et !== '6';
+    const sinOC = ['1', '2', '3'].includes(et);
+    const dSol = BK.dias(r.f_corte, r.f_solped);
+    return Object.assign({}, r, {
+      cantidad: BK.num(r.cantidad), dias_etapa: BK.num(r.dias_etapa), dias_atraso: BK.num(r.dias_atraso), dias_para_entrega: BK.num(r.dias_para_entrega),
+      abierta, sin_oc: sinOC, dias_solped: dSol, dias_sin_oc: sinOC ? dSol : null,
+      tramo_etapa: abierta ? BK.tramo(BK.num(r.dias_etapa)) : null, tramo_sin_oc: sinOC ? BK.tramo(dSol) : null,
+      mes: (e === '5. OC vencida' || e === '4. OC en plazo') && r.f_entrega ? String(r.f_entrega).slice(0, 7) : null,
+      prioridad: { 'Rojo': 0, 'Ámbar': 1, 'Llega pronto': 2, 'Verde': 3, 'En plazo': 4 }[r.semaforo] ?? 9,
+    });
+  };
+
+  BK.GRUPOS = {
+    sin_oc: { nombre: 'Sin OC', f: (r) => r.sin_oc },
+    sin_oc_60: { nombre: 'Sin OC hace más de 60 días', f: (r) => r.sin_oc && r.dias_sin_oc > BK.UMBRAL_SIN_OC },
+    oc_vencida: { nombre: 'OC vencidas', f: (r) => r.estado === '5. OC vencida' },
+    llega_pronto: { nombre: 'Llegan en 7 días o menos', f: (r) => r.semaforo === 'Llega pronto' },
+  };
+  // filtros por clic; 'alcance' decide si se ven solo las abiertas o todas
+  BK.FILTROS = [
+    ['grupo', 'Grupo', (r, v) => (BK.GRUPOS[v] ? BK.GRUPOS[v].f(r) : true), (v) => (BK.GRUPOS[v] ? BK.GRUPOS[v].nombre : v)],
+    ['resp', 'Responsable', (r, v) => r.responsable === v],
+    ['sem', 'Semáforo', (r, v) => r.semaforo === v],
+    ['est', 'Etapa', (r, v) => r.estado === v],
+    ['tetapa', 'Días en etapa', (r, v) => r.tramo_etapa === v],
+    ['tsin', 'Días desde SolPed (sin OC)', (r, v) => r.tramo_sin_oc === v],
+    ['mes', 'Mes de entrega', (r, v) => r.mes === v, (v) => BK.fmtMesLargo(v)],
+    ['q', 'Búsqueda', (r, v) => {
+      const t = String(v).toLowerCase();
+      return [r.material, r.desc_material, r.ot, r.solped, r.oc, r.rlm, r.equipo, r.desc_ot].some((x) => String(x ?? '').toLowerCase().includes(t));
+    }, (v) => `«${v}»`],
+  ];
+  BK.p = () => dash.params() || {};
+  BK.activos = () => { const p = BK.p(); return BK.FILTROS.filter(([k]) => p[k] !== undefined && p[k] !== null && p[k] !== ''); };
+  BK.todas = () => (BK.p().alcance === 'todas');
+  BK.hayFiltro = () => BK.activos().length > 0 || BK.todas();
+
+  let cache = { src: null, rows: [] };
+  BK.filas = () => {
+    const d = dash.data('materiales');
+    if (d.status !== 'ok') return null;
+    if (cache.src !== d.data) cache = { src: d.data, rows: d.data.map(BK.fila) };
+    return cache.rows;
+  };
+  // filas que cumplen el alcance y todos los filtros, salvo los indicados en 'excepto' (para resaltar en vez de esconder)
+  BK.filtradas = (excepto) => {
+    const rows = BK.filas();
+    if (!rows) return null;
+    const p = BK.p(), skip = new Set(excepto || []);
+    const act = BK.activos().filter(([k]) => !skip.has(k));
+    return rows.filter((r) => (BK.todas() || r.abierta) && act.every(([k, , f]) => f(r, p[k])));
+  };
+  BK.DIBUJOS = ['chips', 'conteo', 'k-abiertas', 'k-sinoc', 'k-sinoc-med', 'k-sinoc-max', 'k-sinoc60', 'k-venc', 'k-med', 'k-max', 'k-pronto',
+    'pie-responsable', 'pie-semaforo', 'bar-sinoc', 'tabla-sinoc', 'bar-estado', 'bar-aging', 'col-meses', 'top-atraso', 'tabla-detalle', 'nota-detalle'];
+  BK.set = (obj) => { dash.setParams(obj); BK.DIBUJOS.forEach((n) => dash.draw(n)); };
+  BK.alternar = (obj) => {   // clic sobre lo ya elegido lo quita, como en Power BI
+    const p = BK.p(), nuevo = {};
+    Object.entries(obj).forEach(([k, v]) => { nuevo[k] = v; });
+    const igual = Object.entries(obj).every(([k, v]) => p[k] === v);
+    if (igual) Object.keys(obj).forEach((k) => { nuevo[k] = ''; });
+    BK.set(nuevo);
+  };
+  BK.mediana = (xs) => { const a = xs.filter((x) => x !== null).sort((x, y) => x - y); if (!a.length) return null; const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
+  BK.max = (xs) => { const a = xs.filter((x) => x !== null); return a.length ? Math.max(...a) : null; };
+
+  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const MESES_L = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  BK.fmtN = (v) => (v === null || v === undefined || isNaN(v) ? '—' : d3.format(',.0f')(v).replace(/,/g, ' '));
+  BK.fmtFecha = (s) => { if (!s) return '—'; const [y, m, d] = String(s).slice(0, 10).split('-'); return `${d}/${m}/${y}`; };
+  BK.fmtMes = (s) => { const [y, m] = String(s).split('-'); return `${MESES[Number(m) - 1]} ${String(y).slice(2)}`; };
+  BK.fmtMesLargo = (s) => { const [y, m] = String(s).split('-'); return `${MESES_L[Number(m) - 1]} ${y}`; };
+  BK.fmtCod = (s) => { const t = String(s ?? ''); return /^\d+$/.test(t) ? t.replace(/^0+(?=\d)/, '') : t; };
+  BK.fmtOT = (s) => (String(s ?? '').startsWith('(') || !s ? 'Sin OT' : `OT ${s}`);
+  BK.colorSem = (s) => ({ 'Rojo': 'var(--color-bad)', 'Ámbar': 'var(--color-warn)', 'Verde': 'var(--color-ok)', 'Llega pronto': dash.colors[0], 'En plazo': 'var(--cds-chart-muted)', 'Cerrado': 'var(--color-border-line)' }[s] || 'var(--cds-chart-muted)');
+  BK.colorResp = (s) => (s === 'Mantenimiento' ? 'var(--color-border-line)' : dash.colors[Math.max(0, BK.RESP.indexOf(s)) % dash.colors.length]);
+  BK.colorTramo = (t) => ({ '0–30 d': 'var(--color-ok)', '31–60 d': 'var(--color-warn)', '61–90 d': 'var(--cds-chart-status-critical)', 'Más de 90 d': 'var(--color-bad)' }[t]);
+</script>
+
+<script>
+  // ---------- indicadores sin filtros (los mismos que las medidas DAX; se ven en Fuentes) ----------
+  dash.calc('kpis', {
+    inputs: ['materiales'],
+    title: 'Indicadores principales',
+    description: 'Líneas abiertas, sin OC (con días desde la SolPed), OC vencidas con su atraso y OC que llegan en 7 días, sobre todas las líneas.',
+    fn: (materiales) => {
+      const dias = (a, b) => (a && b ? Math.round((Date.parse(String(a).slice(0, 10)) - Date.parse(String(b).slice(0, 10))) / 864e5) : null);
+      const mediana = (xs) => { const a = xs.filter((x) => x !== null && !isNaN(x)).sort((x, y) => x - y); if (!a.length) return null; const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
+      const etapa = (r) => String(r.estado || '').trim()[0] || '';
+      const abiertas = materiales.filter((r) => etapa(r) !== '' && !['0', '6'].includes(etapa(r)));
+      const sinOC = abiertas.filter((r) => ['1', '2', '3'].includes(etapa(r)));
+      const diasSinOC = sinOC.map((r) => dias(r.f_corte, r.f_solped));
+      const vencidas = abiertas.filter((r) => r.estado === '5. OC vencida');
+      const atrasos = vencidas.map((r) => Number(r.dias_atraso)).filter((x) => !isNaN(x));
+      return [{
+        corte: materiales.length ? materiales[0].f_corte : null,
+        total: materiales.length,
+        abiertas: abiertas.length,
+        sin_oc: sinOC.length,
+        sin_oc_60: diasSinOC.filter((d) => d !== null && d > 60).length,
+        mediana_sin_oc: mediana(diasSinOC),
+        max_sin_oc: diasSinOC.filter((d) => d !== null).length ? Math.max(...diasSinOC.filter((d) => d !== null)) : null,
+        oc_vencidas: vencidas.length,
+        mediana_atraso: mediana(atrasos),
+        max_atraso: atrasos.length ? Math.max(...atrasos) : null,
+        llega_pronto: abiertas.filter((r) => r.semaforo === 'Llega pronto').length,
+      }];
+    },
+  });
+
+  // ---------- encabezado (sin filtros) ----------
+  const textoCalc = (campo) => (el) => {
+    const k = dash.data('kpis');
+    el.classList.toggle('dash-skeleton', k.status === 'loading');
+    if (!k.data || !k.data[0]) { el.textContent = '—'; return; }
+    const v = k.data[0][campo];
+    el.textContent = campo === 'corte' ? BK.fmtFecha(v) : BK.fmtN(v);
+  };
+  [['l-abiertas', 'abiertas'], ['l-total', 'total'], ['l-sinoc', 'sin_oc'], ['l-sinoc60', 'sin_oc_60'], ['l-venc', 'oc_vencidas'], ['l-max', 'max_atraso'], ['corte', 'corte']]
+    .forEach(([n, c]) => dash.draw(n, textoCalc(c)));
+
+  // ---------- indicadores de la selección: con filtros se recalculan sobre las filas visibles ----------
+  function kpiSel(campo) {
+    return (el) => {
+      const rows = BK.filtradas(['grupo']);
+      const k = dash.data('kpis');
+      if (!rows) { el.textContent = '—'; el.classList.toggle('dash-skeleton', dash.data('materiales').status === 'loading'); return; }
+      el.classList.remove('dash-skeleton');
+      const sin = rows.filter((r) => r.sin_oc), venc = rows.filter((r) => r.estado === '5. OC vencida');
+      const v = {
+        abiertas: rows.filter((r) => r.abierta).length,
+        sin_oc: sin.length,
+        sin_oc_60: sin.filter((r) => r.dias_sin_oc > BK.UMBRAL_SIN_OC).length,
+        mediana_sin_oc: BK.mediana(sin.map((r) => r.dias_sin_oc)),
+        max_sin_oc: BK.max(sin.map((r) => r.dias_sin_oc)),
+        oc_vencidas: venc.length,
+        mediana_atraso: BK.mediana(venc.map((r) => r.dias_atraso)),
+        max_atraso: BK.max(venc.map((r) => r.dias_atraso)),
+        llega_pronto: rows.filter((r) => r.semaforo === 'Llega pronto').length,
+      }[campo];
+      el.textContent = BK.fmtN(v);
+      // la marca de origen apunta al cálculo solo cuando no hay filtros (entonces coincide con él)
+      const limpio = !BK.activos().some(([key]) => key !== 'grupo') && !BK.todas() && k.status === 'ok';
+      if (limpio) { el.dataset.source = 'kpis'; el.dataset.field = campo; el.dataset.row = '0'; } else { delete el.dataset.source; delete el.dataset.field; delete el.dataset.row; }
+      const card = el.closest('.bk-kpi');
+      if (card) card.classList.toggle('is-on', (BK.p().grupo || '') === (card.dataset.grupo || '') && (BK.p().grupo || '') !== '');
+    };
+  }
+  [['k-abiertas', 'abiertas'], ['k-sinoc', 'sin_oc'], ['k-sinoc-med', 'mediana_sin_oc'], ['k-sinoc-max', 'max_sin_oc'], ['k-sinoc60', 'sin_oc_60'],
+   ['k-venc', 'oc_vencidas'], ['k-med', 'mediana_atraso'], ['k-max', 'max_atraso'], ['k-pronto', 'llega_pronto']]
+    .forEach(([n, c]) => dash.draw(n, kpiSel(c)));
+
+  // ---------- barra de filtros ----------
+  dash.draw('chips', (el) => {
+    const p = BK.p();
+    el.replaceChildren();
+    BK.activos().forEach(([k, nombre, , fmt]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'bk-chip';
+      b.setAttribute('aria-label', `Quitar filtro ${nombre}`);
+      const t = document.createElement('span'); t.textContent = `${nombre}: ${fmt ? fmt(p[k]) : p[k]}`;
+      const x = document.createElement('span'); x.className = 'x'; x.textContent = '✕';
+      b.append(t, x);
+      b.onclick = () => BK.set({ [k]: '' });
+      el.appendChild(b);
+    });
+    document.querySelectorAll('#quitar').forEach((q) => { q.hidden = !BK.hayFiltro(); });
+    document.querySelectorAll('#sel-alcance').forEach((s) => { s.value = BK.todas() ? 'todas' : 'abiertas'; });
+    document.querySelectorAll('#buscar').forEach((s) => { if (document.activeElement !== s) s.value = p.q || ''; });
+    document.querySelectorAll('.bk-kpi').forEach((c) => c.setAttribute('aria-pressed', String((p.grupo || '') !== '' && (p.grupo || '') === (c.dataset.grupo || ''))));
+  });
+  dash.draw('conteo', (el) => {
+    const rows = BK.filtradas();
+    if (!rows) { el.textContent = '—'; return; }
+    el.textContent = `${BK.fmtN(rows.length)} líneas en la selección`;
+  });
+
+  // controles (solo escuchan y fijan filtros)
+  document.querySelectorAll('#sel-alcance').forEach((s) => s.addEventListener('change', () => BK.set({ alcance: s.value === 'todas' ? 'todas' : '' })));
+  document.querySelectorAll('#buscar').forEach((s) => {
+    let t = null;
+    s.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => BK.set({ q: s.value.trim() }), 250); });
+  });
+  document.querySelectorAll('#quitar').forEach((b) => b.addEventListener('click', () => {
+    dash.resetParams();
+    BK.DIBUJOS.forEach((n) => dash.draw(n));
+  }));
+  document.querySelectorAll('.bk-kpi').forEach((c) => c.addEventListener('click', () => {
+    const g = c.dataset.grupo || null;
+    BK.set({ grupo: g && BK.p().grupo !== g ? g : '' });
+  }));
+</script>
+
+<script>
+  // ---------- utilidades de dibujo ----------
+  function tooltip(el) {
+    let t = el.querySelector(':scope > .bk-tip');
+    if (!t) { t = document.createElement('div'); t.className = 'bk-tip'; t.hidden = true; el.appendChild(t); }
+    return {
+      show(ev, lines) {
+        t.replaceChildren(...lines.map((l, i) => { const d = document.createElement('div'); d.textContent = l; d.className = i === 0 ? 'h' : (i === lines.length - 1 && l.startsWith('Clic') ? 'c' : ''); return d; }));
+        t.hidden = false;
+        const box = el.getBoundingClientRect();
+        let x = ev.clientX - box.left + 12, y = ev.clientY - box.top + 12;
+        const w = t.offsetWidth, h = t.offsetHeight;
+        if (x + w > box.width) x = Math.max(0, ev.clientX - box.left - w - 12);
+        if (y + h > box.height) y = Math.max(0, ev.clientY - box.top - h - 12);
+        t.style.left = x + 'px'; t.style.top = y + 'px';
+      },
+      hide() { t.hidden = true; },
+    };
+  }
+  function vacio(el, texto) {
+    el.replaceChildren();
+    const p = document.createElement('p'); p.className = 'bk-sub'; p.textContent = texto; el.appendChild(p);
+  }
+  function preparar(el) {
+    const st = dash.data('materiales').status;
+    el.classList.toggle('dash-skeleton', st === 'loading');
+    if (st === 'loading') { el.replaceChildren(); return false; }
+    if (st !== 'ok') { vacio(el, 'No se pudo cargar'); return false; }
+    return true;
+  }
+  function medirTextos(svg, textos) {
+    const g = svg.append('g'); let m = 0;
+    textos.forEach((s) => { const t = g.append('text').text(s); m = Math.max(m, t.node().getComputedTextLength()); });
+    g.remove(); return m;
+  }
+  const opac = (on, hay) => (!hay || on ? 1 : 0.3);
+
+  // ---------- gráfico circular con leyenda clicable ----------
+  function pastel(el, { param, campo, orden, color, unidad }) {
+    if (!preparar(el)) return;
+    const rows = BK.filtradas([param]);
+    const sel = BK.p()[param] || null;
+    const cuenta = d3.rollup(rows, (v) => v.length, (r) => r[campo] || '(vacío)');
+    const datos = [...orden, ...[...cuenta.keys()].filter((k) => !orden.includes(k))].filter((k) => cuenta.get(k)).map((k) => ({ k, n: cuenta.get(k) }));
+    if (!datos.length) { vacio(el, 'Sin líneas con estos filtros'); return; }
+    const total = d3.sum(datos, (d) => d.n);
+    const W = el.clientWidth || 320, size = Math.max(150, Math.min(210, W * 0.45)), R = size / 2;
+    el.replaceChildren();
+    const wrap = document.createElement('div'); wrap.className = 'bk-pie'; el.appendChild(wrap);
+    const svg = d3.select(wrap).append('svg').attr('width', size).attr('height', size).attr('viewBox', `0 0 ${size} ${size}`).attr('role', 'img').attr('aria-label', el.getAttribute('aria-label') || '');
+    const g = svg.append('g').attr('transform', `translate(${R},${R})`);
+    const arcs = d3.pie().sort(null).value((d) => d.n)(datos);
+    const arc = d3.arc().innerRadius(0).outerRadius(R - 2);
+    const tip = tooltip(el);
+    g.selectAll('path').data(arcs).join('path').attr('class', 'clic')
+      .attr('d', arc).style('fill', (a) => color(a.data.k)).style('opacity', (a) => opac(a.data.k === sel, sel))
+      .style('stroke', 'var(--color-panel)').style('stroke-width', 2)
+      .on('mousemove', (ev, a) => tip.show(ev, [a.data.k, `${BK.fmtN(a.data.n)} ${unidad} · ${d3.format('.0%')(a.data.n / total)}`, a.data.k === sel ? 'Clic para quitar el filtro' : 'Clic para ver estas líneas']))
+      .on('mouseleave', () => tip.hide())
+      .on('click', (ev, a) => { tip.hide(); BK.alternar({ [param]: a.data.k }); });
+    g.selectAll('text').data(arcs.filter((a) => a.endAngle - a.startAngle > 0.35)).join('text')
+      .attr('class', 'bk-val').attr('text-anchor', 'middle').attr('dy', '0.35em').style('pointer-events', 'none')
+      .attr('transform', (a) => `translate(${d3.arc().innerRadius(R * 0.58).outerRadius(R * 0.58).centroid(a)})`)
+      .style('fill', 'var(--color-bg)').style('font-weight', 600).text((a) => BK.fmtN(a.data.n));
+    const leg = document.createElement('div'); leg.className = 'bk-legend'; wrap.appendChild(leg);
+    datos.forEach((d) => {
+      const b = document.createElement('button'); b.type = 'button';
+      b.className = 'bk-leg' + (sel ? (d.k === sel ? ' is-on' : ' is-off') : '');
+      b.setAttribute('aria-pressed', String(d.k === sel));
+      const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = color(d.k);
+      const nm = document.createElement('span'); nm.textContent = d.k;
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = BK.fmtN(d.n);
+      const p = document.createElement('span'); p.className = 'p'; p.textContent = d3.format('.0%')(d.n / total);
+      b.append(sw, nm, n, p);
+      b.onclick = () => BK.alternar({ [param]: d.k });
+      leg.appendChild(b);
+    });
+  }
+  dash.draw('pie-responsable', (el) => pastel(el, { param: 'resp', campo: 'responsable', orden: BK.RESP, color: BK.colorResp, unidad: 'líneas' }));
+  dash.draw('pie-semaforo', (el) => pastel(el, { param: 'sem', campo: 'semaforo', orden: BK.SEM, color: BK.colorSem, unidad: 'líneas' }));
+
+  // ---------- barras apiladas horizontales (responsable × tramo) ----------
+  function apiladas(el, { filas, paramTramo, campoTramo, unidad }) {
+    if (!preparar(el)) return;
+    const rows = filas();
+    const p = BK.p(), selR = p.resp || null, selT = p[paramTramo] || null;
+    const resp = BK.RESP.filter((r) => rows.some((x) => x.responsable === r && x[campoTramo]));
+    if (!resp.length) { vacio(el, 'Sin líneas con estos filtros'); return; }
+    const datos = resp.map((r) => {
+      const o = { responsable: r };
+      BK.TRAMOS.forEach((t) => { o[t] = rows.filter((x) => x.responsable === r && x[campoTramo] === t).length; });
+      return o;
+    });
+    const W = el.clientWidth || 320, rowH = 40, top = 30, H = top + datos.length * rowH + 6;
+    el.replaceChildren();
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('viewBox', `0 0 ${W} ${H}`);
+    const izq = Math.min(medirTextos(svg, resp) + 10, W * 0.42), der = 34;
+    const tot = (r) => d3.sum(BK.TRAMOS, (t) => r[t]);
+    const x = d3.scaleLinear().domain([0, d3.max(datos, tot) || 1]).nice().range([izq, W - der]);
+    const y = d3.scaleBand().domain(resp).range([top, H - 4]).padding(0.3);
+    const tip = tooltip(el);
+    let lx = 0; const ley = svg.append('g').attr('transform', 'translate(0,10)');
+    BK.TRAMOS.forEach((t) => {
+      const g = ley.append('g').attr('transform', `translate(${lx},0)`).attr('class', 'clic').on('click', () => BK.alternar({ [paramTramo]: t }));
+      g.append('rect').attr('width', 10).attr('height', 10).attr('y', -5).attr('rx', 2).style('fill', BK.colorTramo(t)).style('opacity', opac(t === selT, selT));
+      const tx = g.append('text').attr('x', 14).attr('dy', '0.35em').text(t);
+      lx += 14 + tx.node().getComputedTextLength() + 14;
+    });
+    svg.selectAll('text.lab').data(resp).join('text').attr('class', 'lab clic').attr('x', izq - 8).attr('y', (r) => y(r) + y.bandwidth() / 2).attr('dy', '0.35em').attr('text-anchor', 'end').text((r) => r)
+      .style('font-weight', (r) => (r === selR ? 600 : null)).on('click', (ev, r) => BK.alternar({ resp: r }));
+    const serie = d3.stack().keys(BK.TRAMOS)(datos);
+    svg.selectAll('g.s').data(serie).join('g').attr('class', 's').style('fill', (s) => BK.colorTramo(s.key))
+      .selectAll('rect').data((s) => s.map((d) => Object.assign({ key: s.key }, d))).join('rect').attr('class', 'clic')
+      .attr('x', (d) => x(d[0])).attr('width', (d) => Math.max(0, x(d[1]) - x(d[0]))).attr('y', (d) => y(d.data.responsable)).attr('height', y.bandwidth())
+      .style('opacity', (d) => opac((!selR || d.data.responsable === selR) && (!selT || d.key === selT), selR || selT))
+      .style('stroke', 'var(--color-panel)').style('stroke-width', 1)
+      .on('mousemove', (ev, d) => tip.show(ev, [d.data.responsable, `${d.key}: ${BK.fmtN(d.data[d.key])} ${unidad}`, 'Clic para ver estas líneas']))
+      .on('mouseleave', () => tip.hide())
+      .on('click', (ev, d) => { tip.hide(); BK.alternar({ resp: d.data.responsable, [paramTramo]: d.key }); });
+    svg.selectAll('text.v').data(datos).join('text').attr('class', 'v bk-val').attr('x', (r) => x(tot(r)) + 6).attr('y', (r) => y(r.responsable) + y.bandwidth() / 2).attr('dy', '0.35em').text((r) => BK.fmtN(tot(r)));
+  }
+  dash.draw('bar-sinoc', (el) => apiladas(el, { filas: () => BK.filtradas(['resp', 'tsin']).filter((r) => r.sin_oc), paramTramo: 'tsin', campoTramo: 'tramo_sin_oc', unidad: 'líneas sin OC' }));
+  dash.draw('bar-aging', (el) => apiladas(el, { filas: () => BK.filtradas(['resp', 'tetapa']).filter((r) => r.abierta), paramTramo: 'tetapa', campoTramo: 'tramo_etapa', unidad: 'líneas' }));
+
+  // ---------- lista de sin OC más antiguas ----------
+  dash.draw('tabla-sinoc', (tb) => {
+    tb.replaceChildren();
+    const rows = BK.filtradas();
+    if (!rows) return;
+    const top = rows.filter((r) => r.sin_oc).sort((a, b) => (b.dias_sin_oc ?? -1) - (a.dias_sin_oc ?? -1)).slice(0, 10);
+    if (!top.length) {
+      const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 6; td.className = 'bk-note'; td.textContent = 'Ninguna línea sin OC con estos filtros.'; tr.appendChild(td); tb.appendChild(tr); return;
+    }
+    top.forEach((r) => {
+      const tr = document.createElement('tr'); tr.dataset.key = encodeURIComponent(r.clave);
+      const c = (t, cls) => { const td = document.createElement('td'); if (cls) td.className = cls; td.textContent = t; tr.appendChild(td); };
+      c(r.solped); c(r.desc_material || '', 'w'); c(r.responsable); c(BK.fmtN(r.dias_sin_oc), 'num'); c(BK.fmtN(r.dias_etapa), 'num'); c(r.rlm || '—');
+      tb.appendChild(tr);
+    });
+  });
+
+  // ---------- barras por etapa ----------
+  dash.draw('bar-estado', (el) => {
+    if (!preparar(el)) return;
+    const rows = BK.filtradas(['est']), sel = BK.p().est || null;
+    const datos = BK.ESTADOS.map((e) => ({ e, n: rows.filter((r) => r.estado === e).length })).filter((d) => d.n > 0);
+    if (!datos.length) { vacio(el, 'Sin líneas con estos filtros'); return; }
+    const W = el.clientWidth || 320, rowH = 34, H = datos.length * rowH + 8;
+    el.replaceChildren();
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('viewBox', `0 0 ${W} ${H}`);
+    const etq = (e) => e.replace(/^\d\.\s*/, '');
+    const izq = Math.min(medirTextos(svg, datos.map((d) => etq(d.e))) + 10, W * 0.55), der = 36;
+    const x = d3.scaleLinear().domain([0, d3.max(datos, (d) => d.n)]).nice().range([izq, W - der]);
+    const y = d3.scaleBand().domain(datos.map((d) => d.e)).range([4, H - 4]).padding(0.28);
+    const tip = tooltip(el);
+    const col = (e) => (e.startsWith('5') ? 'var(--color-bad)' : e.startsWith('4') ? dash.colors[0] : e.startsWith('3') ? 'var(--color-warn)' : e.startsWith('6') || e.startsWith('0') ? 'var(--color-border-line)' : 'var(--cds-chart-muted)');
+    svg.selectAll('text.lab').data(datos).join('text').attr('class', 'lab clic').attr('x', izq - 8).attr('y', (d) => y(d.e) + y.bandwidth() / 2).attr('dy', '0.35em').attr('text-anchor', 'end').text((d) => etq(d.e))
+      .style('font-weight', (d) => (d.e === sel ? 600 : null)).on('click', (ev, d) => BK.alternar({ est: d.e }));
+    svg.selectAll('rect').data(datos).join('rect').attr('class', 'clic').attr('x', izq).attr('y', (d) => y(d.e)).attr('height', y.bandwidth())
+      .attr('width', (d) => Math.max(1, x(d.n) - izq)).attr('rx', 3).style('fill', (d) => col(d.e)).style('opacity', (d) => opac(d.e === sel, sel))
+      .on('mousemove', (ev, d) => tip.show(ev, [etq(d.e), `${BK.fmtN(d.n)} líneas`, 'Clic para ver estas líneas'])).on('mouseleave', () => tip.hide())
+      .on('click', (ev, d) => { tip.hide(); BK.alternar({ est: d.e }); });
+    svg.selectAll('text.v').data(datos).join('text').attr('class', 'v bk-val').attr('x', (d) => x(d.n) + 6).attr('y', (d) => y(d.e) + y.bandwidth() / 2).attr('dy', '0.35em').text((d) => BK.fmtN(d.n));
+  });
+
+  // ---------- columnas por mes de entrega comprometida ----------
+  dash.draw('col-meses', (el) => {
+    if (!preparar(el)) return;
+    const rows = BK.filtradas(['mes']).filter((r) => r.mes), sel = BK.p().mes || null;
+    if (!rows.length) { vacio(el, 'Sin OC abiertas con estos filtros'); return; }
+    const datos = d3.sort(d3.rollups(rows, (v) => ({ vencidas: v.filter((r) => r.estado === '5. OC vencida').length, en_plazo: v.filter((r) => r.estado === '4. OC en plazo').length }), (r) => r.mes)
+      .map(([mes, o]) => Object.assign({ mes }, o)), (d) => d.mes);
+    const corte = (BK.filas()[0] || {}).f_corte ? String(BK.filas()[0].f_corte).slice(0, 7) : null;
+    const W = el.clientWidth || 320, H = 290, m = { t: 28, r: 12, b: 40, l: 34 };
+    el.replaceChildren();
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('viewBox', `0 0 ${W} ${H}`);
+    const x = d3.scaleBand().domain(datos.map((d) => d.mes)).range([m.l, W - m.r]).padding(0.2);
+    const y = d3.scaleLinear().domain([0, d3.max(datos, (d) => d.vencidas + d.en_plazo)]).nice().range([H - m.b, m.t]);
+    svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - m.l - m.r)).tickFormat(d3.format('d'))).call((g) => g.select('.domain').remove());
+    const cada = Math.max(1, Math.ceil(datos.length / Math.max(1, Math.floor((W - m.l - m.r) / 44))));
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues(datos.map((d) => d.mes).filter((_, i) => i % cada === 0)).tickFormat(BK.fmtMes).tickSizeOuter(0));
+    const tip = tooltip(el);
+    const col = { vencidas: 'var(--color-bad)', en_plazo: dash.colors[0] };
+    svg.append('g').selectAll('g').data(d3.stack().keys(['vencidas', 'en_plazo'])(datos)).join('g').style('fill', (s) => col[s.key])
+      .selectAll('rect').data((s) => s.map((d) => Object.assign({ key: s.key }, d))).join('rect').attr('class', 'clic')
+      .attr('x', (d) => x(d.data.mes)).attr('width', x.bandwidth()).attr('y', (d) => y(d[1])).attr('height', (d) => Math.max(0, y(d[0]) - y(d[1])))
+      .style('opacity', (d) => opac(d.data.mes === sel, sel))
+      .on('mousemove', (ev, d) => tip.show(ev, [BK.fmtMesLargo(d.data.mes), `Vencidas: ${BK.fmtN(d.data.vencidas)}`, `En plazo: ${BK.fmtN(d.data.en_plazo)}`, 'Clic para ver este mes']))
+      .on('mouseleave', () => tip.hide())
+      .on('click', (ev, d) => { tip.hide(); BK.alternar({ mes: d.data.mes }); });
+    if (corte && x(corte) !== undefined) {
+      const hx = x(corte) + x.bandwidth() / 2;
+      svg.append('line').attr('x1', hx).attr('x2', hx).attr('y1', m.t - 6).attr('y2', H - m.b).style('stroke', 'var(--cds-chart-reference)').style('stroke-dasharray', '4 3').style('pointer-events', 'none');
+      svg.append('text').attr('x', hx).attr('y', m.t - 12).attr('text-anchor', 'middle').text('Hoy');
+    }
+    const ley = svg.append('g').attr('transform', `translate(${m.l},10)`);
+    [['vencidas', 'Vencidas'], ['en_plazo', 'En plazo']].forEach(([k, n], i) => {
+      const g = ley.append('g').attr('transform', `translate(${i * 90},0)`);
+      g.append('rect').attr('width', 10).attr('height', 10).attr('y', -5).attr('rx', 2).style('fill', col[k]);
+      g.append('text').attr('x', 14).attr('dy', '0.35em').text(n);
+    });
+  });
+
+  // ---------- top 12 OC más atrasadas ----------
+  dash.draw('top-atraso', (el) => {
+    if (!preparar(el)) return;
+    const rows = BK.filtradas().filter((r) => r.estado === '5. OC vencida' && r.dias_atraso !== null)
+      .sort((a, b) => b.dias_atraso - a.dias_atraso).slice(0, 12);
+    if (!rows.length) { vacio(el, 'Ninguna OC vencida con estos filtros'); return; }
+    const W = el.clientWidth || 320, rowH = 26, H = rows.length * rowH + 30;
+    const etq = (r) => `${BK.fmtOT(r.ot)} · ${String(r.desc_material || '').slice(0, 28)}`;
+    el.replaceChildren();
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('viewBox', `0 0 ${W} ${H}`);
+    const izq = Math.min(medirTextos(svg, rows.map(etq)) + 10, W * 0.55), der = 40;
+    const x = d3.scaleLinear().domain([0, d3.max(rows, (r) => r.dias_atraso)]).nice().range([izq, W - der]);
+    const y = d3.scaleBand().domain(rows.map((r) => r.clave)).range([4, H - 26]).padding(0.35);
+    svg.append('g').attr('transform', `translate(0,${H - 24})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor((W - izq) / 70))).tickSize(-(H - 30)).tickFormat((v) => `${v} d`)).call((g) => g.select('.domain').remove());
+    const tip = tooltip(el);
+    const yc = (r) => y(r.clave) + y.bandwidth() / 2;
+    svg.selectAll('text.lab').data(rows).join('text').attr('class', 'lab').attr('x', izq - 8).attr('y', yc).attr('dy', '0.35em').attr('text-anchor', 'end').text(etq);
+    svg.selectAll('line.l').data(rows).join('line').attr('class', 'l').attr('x1', izq).attr('x2', (r) => x(r.dias_atraso)).attr('y1', yc).attr('y2', yc).style('stroke', 'var(--color-bad)').style('stroke-width', 2);
+    svg.selectAll('circle').data(rows).join('circle').attr('class', 'clic').attr('cx', (r) => x(r.dias_atraso)).attr('cy', yc).attr('r', 6).style('fill', 'var(--color-bad)')
+      .on('mousemove', (ev, r) => tip.show(ev, [`${BK.fmtOT(r.ot)} · ${BK.fmtCod(r.equipo)}`, r.desc_material || '', `OC ${r.oc} · comprometida ${BK.fmtFecha(r.f_entrega)}`, `${BK.fmtN(r.dias_atraso)} días de atraso`, 'Clic para ver esta OC en la tabla']))
+      .on('mouseleave', () => tip.hide())
+      .on('click', (ev, r) => { tip.hide(); BK.alternar({ q: String(r.oc) }); document.querySelectorAll('#card-detalle').forEach((c) => c.scrollIntoView({ behavior: 'smooth', block: 'start' })); });
+    svg.selectAll('text.v').data(rows).join('text').attr('class', 'v bk-val').attr('x', (r) => x(r.dias_atraso) + 10).attr('y', yc).attr('dy', '0.35em').text((r) => BK.fmtN(r.dias_atraso));
+  });
+
+  // ---------- tabla de detalle ----------
+  const ORDEN = { campo: 'prioridad', dir: 1 };
+  const TEXTO = new Set(['ot', 'equipo', 'material', 'desc_material', 'solped', 'rlm', 'oc', 'estado', 'responsable', 'f_solped', 'f_entrega']);
+  const LIMITE = 200;
+  function ordenar(rows) {
+    const { campo, dir } = ORDEN;
+    const val = (r) => r[campo];
+    return rows.slice().sort((a, b) => {
+      const va = val(a), vb = val(b);
+      if (va === null || va === undefined || va === '') return 1;
+      if (vb === null || vb === undefined || vb === '') return -1;
+      const c = TEXTO.has(campo) ? String(va).localeCompare(String(vb), 'es', { numeric: true }) : va - vb;
+      if (c !== 0) return c * dir;
+      return (b.dias_atraso ?? b.dias_etapa ?? 0) - (a.dias_atraso ?? a.dias_etapa ?? 0);
+    });
+  }
+  dash.draw('tabla-detalle', (tb) => {
+    tb.replaceChildren();
+    const rows = BK.filtradas();
+    document.querySelectorAll('#tabla-detalle th[data-ord]').forEach((th) => {
+      th.setAttribute('aria-sort', th.dataset.ord === ORDEN.campo ? (ORDEN.dir > 0 ? 'ascending' : 'descending') : 'none');
+    });
+    if (!rows) return;
+    const clase = { 'Rojo': 'rojo', 'Ámbar': 'ambar', 'Verde': 'verde', 'Llega pronto': 'verde' };
+    ordenar(rows).slice(0, LIMITE).forEach((r) => {
+      const tr = document.createElement('tr'); tr.dataset.key = encodeURIComponent(r.clave);
+      const c = (t, cls) => { const td = document.createElement('td'); if (cls) td.className = cls; td.textContent = t ?? ''; tr.appendChild(td); return td; };
+      c(r.ot); c(BK.fmtCod(r.equipo)); c(r.material); c(r.desc_material, 'w'); c(BK.fmtN(r.cantidad), 'num'); c(r.solped); c(r.pos); c(r.rlm || '—'); c(r.oc || '—');
+      c(r.estado); c(r.responsable); c(BK.fmtFecha(r.f_solped)); c(BK.fmtN(r.dias_solped), 'num'); c(BK.fmtN(r.dias_etapa), 'num');
+      c(BK.fmtFecha(r.f_entrega));
+      c(r.dias_atraso !== null ? BK.fmtN(r.dias_atraso) : (r.dias_para_entrega !== null ? `llega en ${BK.fmtN(r.dias_para_entrega)} d` : '—'), 'num');
+      const td = c(''); const pill = document.createElement('span'); pill.className = 'bk-pill ' + (clase[r.semaforo] || 'otro'); pill.textContent = r.semaforo || '—'; td.appendChild(pill);
+      tb.appendChild(tr);
+    });
+  });
+  dash.draw('nota-detalle', (el) => {
+    const rows = BK.filtradas();
+    if (!rows) { el.textContent = ''; return; }
+    el.textContent = rows.length > LIMITE ? `Se muestran las primeras ${LIMITE} de ${BK.fmtN(rows.length)} líneas. Filtre o busque para acotar.` : (rows.length ? `${BK.fmtN(rows.length)} líneas.` : 'Ninguna línea cumple los filtros.');
+  });
+  // ordenar al hacer clic en el título (solo escucha y vuelve a dibujar)
+  document.querySelectorAll('#tabla-detalle th[data-ord]').forEach((th) => {
+    th.tabIndex = 0;
+    const go = () => {
+      const k = th.dataset.ord;
+      if (ORDEN.campo === k) ORDEN.dir = -ORDEN.dir; else { ORDEN.campo = k; ORDEN.dir = TEXTO.has(k) || k === 'prioridad' ? 1 : -1; }
+      dash.draw('tabla-detalle');
+    };
+    th.addEventListener('click', go);
+    th.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); } });
+  });
+</script>
+
+<p class="bk-meta" style="margin-top:24px">Página publicada automáticamente por el macro «Actualizar desde SAP» (BD_Materiales_Backlog.xlsm). Datos cifrados con AES-256; se descifran solo en este navegador. <button type="button" class="salir" id="olvidar">Olvidar la contraseña en este equipo</button></p>
+</div>
+<script>
+  // ---------- descifrado: clave = SHA-256(sal + contraseña), luego SHA-256 iterado; AES-256-CBC ----------
+  (function () {
+    const LS = 'backlogPVIC.clave';
+    const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+    let paquete = null;
+    async function bajar() {
+      if (paquete) return paquete;
+      const r = await fetch('data/backlog.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) throw new Error('No se encontró el archivo de datos (data/backlog.json). ¿Ya corrió el macro con la publicación activa?');
+      paquete = await r.json();
+      return paquete;
+    }
+    async function derivar(pwd, p) {
+      const sal = b64(p.salt), pw = new TextEncoder().encode(pwd);
+      const ent = new Uint8Array(sal.length + pw.length); ent.set(sal); ent.set(pw, sal.length);
+      let h = new Uint8Array(await crypto.subtle.digest('SHA-256', ent));
+      for (let i = 1; i < p.iter; i++) h = new Uint8Array(await crypto.subtle.digest('SHA-256', h));
+      return crypto.subtle.importKey('raw', h, { name: 'AES-CBC' }, false, ['decrypt']);
+    }
+    async function abrir(pwd) {
+      const p = await bajar();
+      let txt;
+      try {
+        const k = await derivar(pwd, p);
+        const plano = await crypto.subtle.decrypt({ name: 'AES-CBC', iv: b64(p.iv) }, k, b64(p.data));
+        txt = new TextDecoder('utf-8').decode(plano);
+      } catch (e) { txt = null; }
+      if (!txt || !txt.startsWith('BKLG1\n')) throw new Error('Contraseña incorrecta.');
+      const rows = d3.csvParse(txt.slice(6), (r) => { for (const k in r) if (r[k] === '') r[k] = null; return r; });
+      dash._cargar(rows);
+    }
+    const gate = document.getElementById('gate'), form = document.getElementById('gate-form');
+    const inp = document.getElementById('gate-pwd'), rec = document.getElementById('gate-rec');
+    const btn = document.getElementById('gate-btn'), err = document.getElementById('gate-err');
+    async function intentar(pwd, guardar) {
+      btn.disabled = true; err.textContent = 'Descifrando…';
+      try {
+        await abrir(pwd);
+        if (guardar) { try { localStorage.setItem(LS, pwd); } catch (e) {} }
+        gate.hidden = true; err.textContent = '';
+      } catch (e) {
+        err.textContent = e.message; gate.hidden = false;
+        try { localStorage.removeItem(LS); } catch (x) {}
+      } finally { btn.disabled = false; }
+    }
+    form.addEventListener('submit', (ev) => { ev.preventDefault(); if (inp.value) intentar(inp.value, rec.checked); });
+    document.getElementById('olvidar').addEventListener('click', () => { try { localStorage.removeItem(LS); } catch (e) {} location.reload(); });
+    let guardada = null;
+    try { guardada = localStorage.getItem(LS); } catch (e) {}
+    if (guardada) { rec.checked = true; intentar(guardada, true); }
+  })();
+</script>
+</body>
+</html>
