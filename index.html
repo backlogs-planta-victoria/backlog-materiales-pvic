@@ -68,10 +68,10 @@
     <img class="gate-logo logo-cla" src="logo-negro.png" alt="Volcan">
     <img class="gate-logo logo-osc" src="logo-blanco.png" alt="Volcan">
     <h1>Backlog de materiales</h1>
-    <p>Mantenimiento Mecánico · Planta Victoria. Ingrese la contraseña.</p>
+    <p>Mantenimiento Mecánico Planta · Planta Victoria. Ingrese su contraseña de acceso.</p>
     <input type="password" id="gate-pwd" placeholder="Contraseña" aria-label="Contraseña" autofocus>
     <label><input type="checkbox" id="gate-rec"> Recordar en este equipo</label>
-    <button type="submit" id="gate-btn">Ver datos</button>
+    <button type="submit" id="gate-btn">Ingresar</button>
     <div class="err" id="gate-err" role="alert"></div>
   </form>
 </div>
@@ -218,11 +218,11 @@
 
 <div class="bk">
   <header class="bk-head" id="resumen">
-    <p class="bk-lead" data-read lang="es">Hay <b data-draw="l-abiertas" data-source="kpis" data-field="abiertas" data-row="0">—</b> líneas de compra abiertas de un total de <b data-draw="l-total" data-source="kpis" data-field="total" data-row="0">—</b>. <b data-draw="l-sinoc" data-source="kpis" data-field="sin_oc" data-row="0">—</b> todavía no tienen OC, y <b data-draw="l-sinoc60" data-source="kpis" data-field="sin_oc_60" data-row="0">—</b> de ellas tienen la SolPed creada hace más de 60 días. <b data-draw="l-venc" data-source="kpis" data-field="oc_vencidas" data-row="0">—</b> OC tienen la fecha de entrega vencida, con un atraso máximo de <b data-draw="l-max" data-source="kpis" data-field="max_atraso" data-row="0">—</b> días.</p>
+    <p class="bk-lead" data-read lang="es">Resumen al corte: <b data-draw="l-abiertas" data-source="kpis" data-field="abiertas" data-row="0">—</b> líneas de compra abiertas de <b data-draw="l-total" data-source="kpis" data-field="total" data-row="0">—</b> registradas. <b data-draw="l-sinoc" data-source="kpis" data-field="sin_oc" data-row="0">—</b> se encuentran sin orden de compra, de las cuales <b data-draw="l-sinoc60" data-source="kpis" data-field="sin_oc_60" data-row="0">—</b> superan los 60 días desde la emisión de la SolPed. <b data-draw="l-venc" data-source="kpis" data-field="oc_vencidas" data-row="0">—</b> órdenes de compra registran fecha de entrega vencida, con un atraso máximo de <b data-draw="l-max" data-source="kpis" data-field="max_atraso" data-row="0">—</b> días.</p>
   </header>
 
   <div class="bk-bar" id="filtros" role="region" aria-label="Filtros">
-    <label>Ver
+    <label>Vista
       <select class="dash-select" id="sel-alcance" aria-label="Líneas a mostrar">
         <option value="abiertas">Líneas abiertas</option>
         <option value="todas">Todas (incluye entregadas y borradas)</option>
@@ -240,12 +240,12 @@
       <span class="bk-kpi-num" data-draw="k-abiertas" data-source="kpis" data-field="abiertas" data-row="0">—</span>
     </button>
     <button type="button" class="bk-kpi is-warn" id="kpi-sinoc" data-grupo="sin_oc">
-      <span class="bk-kpi-label">Sin OC</span>
+      <span class="bk-kpi-label">Líneas sin OC</span>
       <span class="bk-kpi-num" data-draw="k-sinoc" data-source="kpis" data-field="sin_oc" data-row="0">—</span>
       <span class="bk-kpi-note">Desde la SolPed: mediana <span data-draw="k-sinoc-med" data-source="kpis" data-field="mediana_sin_oc" data-row="0">—</span> d · máx. <span data-draw="k-sinoc-max" data-source="kpis" data-field="max_sin_oc" data-row="0">—</span> d</span>
     </button>
     <button type="button" class="bk-kpi is-bad" id="kpi-sinoc60" data-grupo="sin_oc_60">
-      <span class="bk-kpi-label">Sin OC hace más de 60 días</span>
+      <span class="bk-kpi-label">Sin OC con más de 60 días</span>
       <span class="bk-kpi-num" data-draw="k-sinoc60" data-source="kpis" data-field="sin_oc_60" data-row="0">—</span>
     </button>
     <button type="button" class="bk-kpi is-bad" id="kpi-vencidas" data-grupo="oc_vencida">
@@ -254,33 +254,33 @@
       <span class="bk-kpi-note">Atraso: mediana <span data-draw="k-med" data-source="kpis" data-field="mediana_atraso" data-row="0">—</span> d · máx. <span data-draw="k-max" data-source="kpis" data-field="max_atraso" data-row="0">—</span> d</span>
     </button>
     <button type="button" class="bk-kpi" id="kpi-pronto" data-grupo="llega_pronto">
-      <span class="bk-kpi-label">Llegan en 7 días o menos</span>
+      <span class="bk-kpi-label">Entregas en los próximos 7 días</span>
       <span class="bk-kpi-num" data-draw="k-pronto" data-source="kpis" data-field="llega_pronto" data-row="0">—</span>
     </button>
   </section>
 
   <section class="bk-grid" id="distribucion">
     <article class="bk-card" id="card-responsable">
-      <h2>¿Quién tiene que actuar?</h2>
+      <h2>Líneas abiertas por responsable</h2>
       <div class="bk-chart" data-draw="pie-responsable" data-source="materiales" role="img" aria-label="Gráfico circular de líneas por responsable"></div>
     </article>
     <article class="bk-card" id="card-acciones">
-      <h2>¿Qué hay que hacer?</h2>
+      <h2>Acciones pendientes por prioridad</h2>
       <div class="bk-chart" data-draw="bar-acciones" data-source="materiales" role="img" aria-label="Barras de líneas abiertas por acción pendiente, de la más urgente a la menos urgente"></div>
     </article>
   </section>
 
   <section class="bk-sechead" id="sin-oc">
-    <h2 class="bk-h2">Líneas sin OC</h2>
+    <h2 class="bk-h2">Solicitudes de pedido sin orden de compra</h2>
   </section>
   <section class="bk-grid" id="sin-oc-graficos">
     <article class="bk-card" id="card-sinoc-tramos">
-      <h3>Sin OC por responsable y días desde la SolPed</h3>
+      <h3>Antigüedad de SolPed sin OC por responsable</h3>
       <p class="bk-sub">Jefatura: liberar · Logística: RLM · Compras: OC</p>
       <div class="bk-chart" data-draw="bar-sinoc" data-source="materiales" role="img" aria-label="Barras apiladas de líneas sin OC por responsable y días desde la SolPed"></div>
     </article>
     <article class="bk-card" id="card-sinoc-lista">
-      <h3>Las 10 líneas sin OC más antiguas</h3>
+      <h3>SolPed sin OC de mayor antigüedad (Top 10)</h3>
       <div class="bk-tablewrap">
         <table class="bk-table" data-source="materiales" data-row-key="clave" aria-label="Líneas sin OC más antiguas">
           <thead>
@@ -301,27 +301,27 @@
 
   <section class="bk-grid" id="etapas">
     <article class="bk-card" id="card-estado">
-      <h2>Líneas por etapa de compra</h2>
+      <h2>Distribución por etapa del proceso de compra</h2>
       <div class="bk-chart" data-draw="bar-estado" data-source="materiales" role="img" aria-label="Barras de líneas por etapa de compra"></div>
     </article>
     <article class="bk-card" id="card-aging">
-      <h2>Días en la etapa actual, por responsable</h2>
+      <h2>Permanencia en la etapa actual por responsable</h2>
       <div class="bk-chart" data-draw="bar-aging" data-source="materiales" role="img" aria-label="Barras apiladas de días en la etapa por responsable"></div>
     </article>
   </section>
 
   <article class="bk-card" id="card-fechas">
-    <h2>Fechas comprometidas de entrega por mes</h2>
+    <h2>Entregas comprometidas por mes</h2>
     <div class="bk-chart tall" data-draw="col-meses" data-source="materiales" role="img" aria-label="Columnas de OC abiertas por mes de entrega comprometida, vencidas y en plazo"></div>
   </article>
 
   <article class="bk-card" id="card-top">
-    <h2>Las 12 OC más atrasadas</h2>
+    <h2>Órdenes de compra con mayor atraso (Top 12)</h2>
     <div class="bk-chart tall" data-draw="top-atraso" data-source="materiales" role="img" aria-label="Barras de las OC con más días de atraso"></div>
   </article>
 
   <article class="bk-card" id="card-detalle">
-    <h2>Líneas de la selección</h2>
+    <h2>Detalle de líneas</h2>
     <div class="bk-tablewrap">
       <table class="bk-table" id="tabla-detalle" data-source="materiales" data-row-key="clave" aria-label="Detalle de líneas de la selección">
         <thead>
@@ -360,7 +360,7 @@
       <dt>Días desde SolPed</dt><dd>Fecha de corte menos la fecha de creación de la SolPed. Mide cuánto lleva esperando la línea en total.</dd>
       <dt>Días en etapa</dt><dd>Desde la creación de la SolPed, su liberación, la creación de la RLM o la fecha de la OC, según la etapa. Mide cuánto lleva detenida en el paso actual.</dd>
       <dt>Días de atraso</dt><dd>Fecha de corte menos la fecha comprometida, solo para «5. OC vencida». La fecha la registra Compras y no siempre se actualiza: sirve como sustento para pedir revisión.</dd>
-      <dt>Acción</dt><dd>Cada línea abierta recibe la primera que le corresponda, en este orden: reclamar OC vencida · escalar sin OC hace más de 60 días (desde la SolPed) · pedir fecha de entrega (OC sin fecha) · seguir sin OC hace 31–60 días · preparar ejecución (la OC vence en 7 días o menos) · en trámite sin OC hasta 30 días · esperar OC en plazo.</dd>
+      <dt>Acción</dt><dd>Cada línea abierta recibe la primera que le corresponda, en este orden: gestionar reclamo de OC vencida · escalar SolPed sin OC con más de 60 días · solicitar fecha de entrega (OC sin fecha) · seguimiento de SolPed sin OC de 31 a 60 días · programar ejecución (entrega en 7 días o menos) · SolPed en trámite hasta 30 días · OC dentro de plazo.</dd>
       <dt>No incluye</dt><dd>Proveedor, precios ni RUC, hasta que se valide compartirlos.</dd>
     </dl>
   </details>
@@ -373,15 +373,15 @@
   BK.RESP = ['Jefatura', 'Logística', 'Compras', 'Proveedor / Compras', 'Mantenimiento'];
   // Acción pendiente por línea, de la más urgente a la menos (reemplaza al semáforo de colores)
   BK.ACCIONES = [
-    { k: 'Reclamar OC vencida', quien: 'Compras / proveedor', tono: 'bad', f: (r) => r.estado === '5. OC vencida' },
-    { k: 'Escalar: sin OC hace más de 60 d', quien: null, tono: 'bad', f: (r) => r.sin_oc && r.dias_sin_oc > BK.UMBRAL_SIN_OC },
-    { k: 'Pedir fecha de entrega', quien: 'Compras', tono: 'warn', f: (r) => r.estado === '5. OC sin fecha de entrega' },
-    { k: 'Seguir: sin OC hace 31–60 d', quien: null, tono: 'warn', f: (r) => r.sin_oc && r.dias_sin_oc > 30 },
-    { k: 'Preparar ejecución: llega en ≤ 7 d', quien: 'Planeamiento', tono: 'info', f: (r) => r.semaforo === 'Llega pronto' },
-    { k: 'En trámite: sin OC ≤ 30 d', quien: null, tono: 'neutro', f: (r) => r.sin_oc },
-    { k: 'Esperar: OC en plazo', quien: 'Proveedor', tono: 'neutro', f: (r) => r.estado === '4. OC en plazo' },
+    { k: 'Gestionar reclamo de OC vencida', quien: 'Compras / Proveedor', tono: 'bad', f: (r) => r.estado === '5. OC vencida' },
+    { k: 'Escalar SolPed sin OC (> 60 d)', quien: null, tono: 'bad', f: (r) => r.sin_oc && r.dias_sin_oc > BK.UMBRAL_SIN_OC },
+    { k: 'Solicitar fecha de entrega de OC', quien: 'Compras', tono: 'warn', f: (r) => r.estado === '5. OC sin fecha de entrega' },
+    { k: 'Seguimiento de SolPed sin OC (31–60 d)', quien: null, tono: 'warn', f: (r) => r.sin_oc && r.dias_sin_oc > 30 },
+    { k: 'Programar ejecución (entrega ≤ 7 d)', quien: 'Planeamiento', tono: 'info', f: (r) => r.semaforo === 'Llega pronto' },
+    { k: 'SolPed en trámite (≤ 30 d)', quien: null, tono: 'neutro', f: (r) => r.sin_oc },
+    { k: 'OC dentro de plazo', quien: 'Proveedor', tono: 'neutro', f: (r) => r.estado === '4. OC en plazo' },
   ];
-  BK.CERRADA = 'Cerrada (entregada o borrada)';
+  BK.CERRADA = 'Cerrada (entregada o anulada)';
   BK.accion = (r) => { if (!r.abierta) return BK.CERRADA; const a = BK.ACCIONES.find((x) => x.f(r)); return a ? a.k : 'Sin clasificar'; };
   BK.ESTADOS = ['1. Pendiente liberación Superintendente', '1. Pendiente liberación GGO', '2. Pendiente RLM (Logística)',
     '3. Pendiente OC (Compras)', '4. OC en plazo', '5. OC vencida', '5. OC sin fecha de entrega', '6. Entregado', '0. Borrado'];
@@ -407,14 +407,14 @@
   BK.fila = (r) => { const o = _fila(r); o.accion = BK.accion(o); const i = BK.ACCIONES.findIndex((a) => a.k === o.accion); o.prioridad = i < 0 ? 99 : i; return o; };
 
   BK.GRUPOS = {
-    sin_oc: { nombre: 'Sin OC', f: (r) => r.sin_oc },
-    sin_oc_60: { nombre: 'Sin OC hace más de 60 días', f: (r) => r.sin_oc && r.dias_sin_oc > BK.UMBRAL_SIN_OC },
+    sin_oc: { nombre: 'Líneas sin OC', f: (r) => r.sin_oc },
+    sin_oc_60: { nombre: 'Sin OC con más de 60 días', f: (r) => r.sin_oc && r.dias_sin_oc > BK.UMBRAL_SIN_OC },
     oc_vencida: { nombre: 'OC vencidas', f: (r) => r.estado === '5. OC vencida' },
-    llega_pronto: { nombre: 'Llegan en 7 días o menos', f: (r) => r.semaforo === 'Llega pronto' },
+    llega_pronto: { nombre: 'Entregas en los próximos 7 días', f: (r) => r.semaforo === 'Llega pronto' },
   };
   // filtros por clic; 'alcance' decide si se ven solo las abiertas o todas
   BK.FILTROS = [
-    ['grupo', 'Grupo', (r, v) => (BK.GRUPOS[v] ? BK.GRUPOS[v].f(r) : true), (v) => (BK.GRUPOS[v] ? BK.GRUPOS[v].nombre : v)],
+    ['grupo', 'Indicador', (r, v) => (BK.GRUPOS[v] ? BK.GRUPOS[v].f(r) : true), (v) => (BK.GRUPOS[v] ? BK.GRUPOS[v].nombre : v)],
     ['resp', 'Responsable', (r, v) => r.responsable === v],
     ['acc', 'Acción', (r, v) => r.accion === v],
     ['est', 'Etapa', (r, v) => r.estado === v],
