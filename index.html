@@ -264,10 +264,9 @@
       <h2>¿Quién tiene que actuar?</h2>
       <div class="bk-chart" data-draw="pie-responsable" data-source="materiales" role="img" aria-label="Gráfico circular de líneas por responsable"></div>
     </article>
-    <article class="bk-card" id="card-semaforo">
-      <h2>Semáforo</h2>
-      <p class="bk-sub">Rojo: OC vencida o &gt; 60 d en la etapa · Ámbar: &gt; 30 d · Llega pronto: ≤ 7 d</p>
-      <div class="bk-chart" data-draw="pie-semaforo" data-source="materiales" role="img" aria-label="Gráfico circular de líneas por color de semáforo"></div>
+    <article class="bk-card" id="card-acciones">
+      <h2>¿Qué hay que hacer?</h2>
+      <div class="bk-chart" data-draw="bar-acciones" data-source="materiales" role="img" aria-label="Barras de líneas abiertas por acción pendiente, de la más urgente a la menos urgente"></div>
     </article>
   </section>
 
@@ -343,7 +342,7 @@
             <th class="ord num" data-ord="dias_etapa" data-field="dias_etapa">Días en etapa</th>
             <th class="ord" data-ord="f_entrega" data-field="f_entrega">Entrega comprometida</th>
             <th class="ord num" data-ord="dias_atraso" data-field="dias_atraso">Días de atraso</th>
-            <th class="ord" data-ord="prioridad" data-field="semaforo">Semáforo</th>
+            <th class="ord" data-ord="prioridad">Acción</th>
           </tr>
         </thead>
         <tbody data-draw="tabla-detalle"></tbody>
@@ -361,7 +360,7 @@
       <dt>Días desde SolPed</dt><dd>Fecha de corte menos la fecha de creación de la SolPed. Mide cuánto lleva esperando la línea en total.</dd>
       <dt>Días en etapa</dt><dd>Desde la creación de la SolPed, su liberación, la creación de la RLM o la fecha de la OC, según la etapa. Mide cuánto lleva detenida en el paso actual.</dd>
       <dt>Días de atraso</dt><dd>Fecha de corte menos la fecha comprometida, solo para «5. OC vencida». La fecha la registra Compras y no siempre se actualiza: sirve como sustento para pedir revisión.</dd>
-      <dt>Umbrales</dt><dd>Ámbar más de 30 días, rojo más de 60, llega pronto 7 días: los de la hoja Parametros del Excel. Si allí cambian, el semáforo del Excel cambia; los títulos de esta página no.</dd>
+      <dt>Acción</dt><dd>Cada línea abierta recibe la primera que le corresponda, en este orden: reclamar OC vencida · escalar sin OC hace más de 60 días (desde la SolPed) · pedir fecha de entrega (OC sin fecha) · seguir sin OC hace 31–60 días · preparar ejecución (la OC vence en 7 días o menos) · en trámite sin OC hasta 30 días · esperar OC en plazo.</dd>
       <dt>No incluye</dt><dd>Proveedor, precios ni RUC, hasta que se valide compartirlos.</dd>
     </dl>
   </details>
@@ -372,7 +371,18 @@
   const BK = window.BK = {};
   BK.UMBRAL_SIN_OC = 60;     // días desde la SolPed; igual a Parametros!C6 (umbral rojo)
   BK.RESP = ['Jefatura', 'Logística', 'Compras', 'Proveedor / Compras', 'Mantenimiento'];
-  BK.SEM = ['Rojo', 'Ámbar', 'Verde', 'Llega pronto', 'En plazo', 'Cerrado'];
+  // Acción pendiente por línea, de la más urgente a la menos (reemplaza al semáforo de colores)
+  BK.ACCIONES = [
+    { k: 'Reclamar OC vencida', quien: 'Compras / proveedor', tono: 'bad', f: (r) => r.estado === '5. OC vencida' },
+    { k: 'Escalar: sin OC hace más de 60 d', quien: null, tono: 'bad', f: (r) => r.sin_oc && r.dias_sin_oc > BK.UMBRAL_SIN_OC },
+    { k: 'Pedir fecha de entrega', quien: 'Compras', tono: 'warn', f: (r) => r.estado === '5. OC sin fecha de entrega' },
+    { k: 'Seguir: sin OC hace 31–60 d', quien: null, tono: 'warn', f: (r) => r.sin_oc && r.dias_sin_oc > 30 },
+    { k: 'Preparar ejecución: llega en ≤ 7 d', quien: 'Planeamiento', tono: 'info', f: (r) => r.semaforo === 'Llega pronto' },
+    { k: 'En trámite: sin OC ≤ 30 d', quien: null, tono: 'neutro', f: (r) => r.sin_oc },
+    { k: 'Esperar: OC en plazo', quien: 'Proveedor', tono: 'neutro', f: (r) => r.estado === '4. OC en plazo' },
+  ];
+  BK.CERRADA = 'Cerrada (entregada o borrada)';
+  BK.accion = (r) => { if (!r.abierta) return BK.CERRADA; const a = BK.ACCIONES.find((x) => x.f(r)); return a ? a.k : 'Sin clasificar'; };
   BK.ESTADOS = ['1. Pendiente liberación Superintendente', '1. Pendiente liberación GGO', '2. Pendiente RLM (Logística)',
     '3. Pendiente OC (Compras)', '4. OC en plazo', '5. OC vencida', '5. OC sin fecha de entrega', '6. Entregado', '0. Borrado'];
   BK.TRAMOS = ['0–30 d', '31–60 d', '61–90 d', 'Más de 90 d'];
@@ -391,9 +401,10 @@
       abierta, sin_oc: sinOC, dias_solped: dSol, dias_sin_oc: sinOC ? dSol : null,
       tramo_etapa: abierta ? BK.tramo(BK.num(r.dias_etapa)) : null, tramo_sin_oc: sinOC ? BK.tramo(dSol) : null,
       mes: (e === '5. OC vencida' || e === '4. OC en plazo') && r.f_entrega ? String(r.f_entrega).slice(0, 7) : null,
-      prioridad: { 'Rojo': 0, 'Ámbar': 1, 'Llega pronto': 2, 'Verde': 3, 'En plazo': 4 }[r.semaforo] ?? 9,
     });
   };
+  const _fila = BK.fila;
+  BK.fila = (r) => { const o = _fila(r); o.accion = BK.accion(o); const i = BK.ACCIONES.findIndex((a) => a.k === o.accion); o.prioridad = i < 0 ? 99 : i; return o; };
 
   BK.GRUPOS = {
     sin_oc: { nombre: 'Sin OC', f: (r) => r.sin_oc },
@@ -405,7 +416,7 @@
   BK.FILTROS = [
     ['grupo', 'Grupo', (r, v) => (BK.GRUPOS[v] ? BK.GRUPOS[v].f(r) : true), (v) => (BK.GRUPOS[v] ? BK.GRUPOS[v].nombre : v)],
     ['resp', 'Responsable', (r, v) => r.responsable === v],
-    ['sem', 'Semáforo', (r, v) => r.semaforo === v],
+    ['acc', 'Acción', (r, v) => r.accion === v],
     ['est', 'Etapa', (r, v) => r.estado === v],
     ['tetapa', 'Días en etapa', (r, v) => r.tramo_etapa === v],
     ['tsin', 'Días desde SolPed (sin OC)', (r, v) => r.tramo_sin_oc === v],
@@ -436,7 +447,7 @@
     return rows.filter((r) => (BK.todas() || r.abierta) && act.every(([k, , f]) => f(r, p[k])));
   };
   BK.DIBUJOS = ['chips', 'conteo', 'k-abiertas', 'k-sinoc', 'k-sinoc-med', 'k-sinoc-max', 'k-sinoc60', 'k-venc', 'k-med', 'k-max', 'k-pronto',
-    'pie-responsable', 'pie-semaforo', 'bar-sinoc', 'tabla-sinoc', 'bar-estado', 'bar-aging', 'col-meses', 'top-atraso', 'tabla-detalle', 'nota-detalle'];
+    'pie-responsable', 'bar-acciones', 'bar-sinoc', 'tabla-sinoc', 'bar-estado', 'bar-aging', 'col-meses', 'top-atraso', 'tabla-detalle', 'nota-detalle'];
   BK.set = (obj) => { dash.setParams(obj); BK.DIBUJOS.forEach((n) => dash.draw(n)); };
   BK.alternar = (obj) => {   // clic sobre lo ya elegido lo quita, como en Power BI
     const p = BK.p(), nuevo = {};
@@ -456,6 +467,7 @@
   BK.fmtMesLargo = (s) => { const [y, m] = String(s).split('-'); return `${MESES_L[Number(m) - 1]} ${y}`; };
   BK.fmtCod = (s) => { const t = String(s ?? ''); return /^\d+$/.test(t) ? t.replace(/^0+(?=\d)/, '') : t; };
   BK.fmtOT = (s) => (String(s ?? '').startsWith('(') || !s ? 'Sin OT' : `OT ${s}`);
+  BK.colorTono = (t) => ({ bad: 'var(--color-bad)', warn: 'var(--color-warn)', info: dash.colors[0], neutro: 'var(--cds-chart-muted)' }[t] || 'var(--color-border-line)');
   BK.colorSem = (s) => ({ 'Rojo': 'var(--color-bad)', 'Ámbar': 'var(--color-warn)', 'Verde': 'var(--color-ok)', 'Llega pronto': dash.colors[0], 'En plazo': 'var(--cds-chart-muted)', 'Cerrado': 'var(--color-border-line)' }[s] || 'var(--cds-chart-muted)');
   BK.colorResp = (s) => (s === 'Mantenimiento' ? 'var(--color-border-line)' : dash.colors[Math.max(0, BK.RESP.indexOf(s)) % dash.colors.length]);
   BK.colorTramo = (t) => ({ '0–30 d': 'var(--color-ok)', '31–60 d': 'var(--color-warn)', '61–90 d': 'var(--cds-chart-status-critical)', 'Más de 90 d': 'var(--color-bad)' }[t]);
@@ -654,7 +666,38 @@
     });
   }
   dash.draw('pie-responsable', (el) => pastel(el, { param: 'resp', campo: 'responsable', orden: BK.RESP, color: BK.colorResp, unidad: 'líneas' }));
-  dash.draw('pie-semaforo', (el) => pastel(el, { param: 'sem', campo: 'semaforo', orden: BK.SEM, color: BK.colorSem, unidad: 'líneas' }));
+
+  // ---------- ¿Qué hay que hacer? (acciones con nombre, de más a menos urgente) ----------
+  dash.draw('bar-acciones', (el) => {
+    if (!preparar(el)) return;
+    const rows = BK.filtradas(['acc']), sel = BK.p().acc || null;
+    const lista = BK.ACCIONES.map((a) => ({ a, rs: rows.filter((r) => r.accion === a.k) }));
+    if (BK.todas()) lista.push({ a: { k: BK.CERRADA, quien: null, tono: 'cerrada' }, rs: rows.filter((r) => r.accion === BK.CERRADA) });
+    const datos = lista.filter((d) => d.rs.length).map((d) => {
+      let quien = d.a.quien;
+      if (!quien) quien = d3.rollups(d.rs, (v) => v.length, (r) => r.responsable).sort((x, y) => y[1] - x[1]).map(([k, n]) => `${k} ${n}`).join(' · ');
+      return { k: d.a.k, n: d.rs.length, quien, tono: d.a.tono };
+    });
+    if (!datos.length) { vacio(el, 'Sin líneas con estos filtros'); return; }
+    const W = el.clientWidth || 320, angosto = W < 460, rowH = angosto ? 62 : 46, H = datos.length * rowH + 4;
+    el.replaceChildren();
+    const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('viewBox', `0 0 ${W} ${H}`);
+    const izq = angosto ? 0 : Math.min(medirTextos(svg, datos.map((d) => d.k)) + 14, W * 0.5), der = 40;
+    const x = d3.scaleLinear().domain([0, d3.max(datos, (d) => d.n)]).range([izq, W - der]);
+    const tip = tooltip(el);
+    const g = svg.selectAll('g.fila').data(datos).join('g').attr('class', 'fila clic').attr('transform', (d, i) => `translate(0,${i * rowH})`)
+      .style('opacity', (d) => opac(d.k === sel, sel))
+      .on('mousemove', (ev, d) => tip.show(ev, [d.k, `${BK.fmtN(d.n)} líneas`, `Quién: ${d.quien}`, d.k === sel ? 'Clic para quitar el filtro' : 'Clic para ver estas líneas']))
+      .on('mouseleave', () => tip.hide())
+      .on('click', (ev, d) => { tip.hide(); BK.alternar({ acc: d.k }); });
+    g.append('rect').attr('x', 0).attr('y', 0).attr('width', W).attr('height', rowH - 4).style('fill', 'transparent');
+    const yBar = angosto ? 21 : 6, hBar = angosto ? 12 : 16;
+    g.append('text').attr('class', 'bk-val').attr('x', angosto ? 0 : izq - 10).attr('y', angosto ? 13 : 14).attr('text-anchor', angosto ? 'start' : 'end')
+      .style('font-weight', (d) => (d.tono === 'bad' ? 600 : null)).text((d) => d.k);
+    g.append('text').attr('x', angosto ? 0 : izq - 10).attr('y', angosto ? 48 : 32).attr('text-anchor', angosto ? 'start' : 'end').text((d) => d.quien);
+    g.append('rect').attr('x', izq).attr('y', yBar).attr('height', hBar).attr('rx', 3).attr('width', (d) => Math.max(2, x(d.n) - izq)).style('fill', (d) => BK.colorTono(d.tono));
+    g.append('text').attr('class', 'bk-val').attr('x', (d) => x(d.n) + 6).attr('y', yBar + hBar / 2).attr('dy', '0.35em').style('font-weight', 600).text((d) => BK.fmtN(d.n));
+  });
 
   // ---------- barras apiladas horizontales (responsable × tramo) ----------
   function apiladas(el, { filas, paramTramo, campoTramo, unidad }) {
@@ -834,7 +877,8 @@
       c(r.estado); c(r.responsable); c(BK.fmtFecha(r.f_solped)); c(BK.fmtN(r.dias_solped), 'num'); c(BK.fmtN(r.dias_etapa), 'num');
       c(BK.fmtFecha(r.f_entrega));
       c(r.dias_atraso !== null ? BK.fmtN(r.dias_atraso) : (r.dias_para_entrega !== null ? `llega en ${BK.fmtN(r.dias_para_entrega)} d` : '—'), 'num');
-      const td = c(''); const pill = document.createElement('span'); pill.className = 'bk-pill ' + (clase[r.semaforo] || 'otro'); pill.textContent = r.semaforo || '—'; td.appendChild(pill);
+      const ac = BK.ACCIONES.find((a) => a.k === r.accion);
+      const td = c(''); const pill = document.createElement('span'); pill.className = 'bk-pill ' + ({ bad: 'rojo', warn: 'ambar', info: 'verde' }[ac && ac.tono] || 'otro'); pill.textContent = r.accion; td.appendChild(pill);
       tb.appendChild(tr);
     });
   });
