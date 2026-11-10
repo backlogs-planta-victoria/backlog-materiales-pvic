@@ -46,14 +46,29 @@
   .gate button { font: inherit; font-size: 15px; padding: 10px 14px; border-radius: 8px; border: 0; background: var(--color-fg); color: var(--color-bg); cursor: pointer; }
   .gate button:disabled { opacity: .6; cursor: progress; }
   .gate .err { color: var(--color-bad); font-size: 13px; min-height: 1.2em; }
+  .logo-osc { display: none; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo-cla { display: none; } :root:not([data-theme="light"]) .logo-osc { display: inline; } }
+  .corp { background: var(--color-panel); border-bottom: 1px solid var(--color-border-line); box-shadow: inset 0 -3px 0 var(--color-fg); }
+  .corp-in { max-width: 1240px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .corp-logo img { height: 40px; width: auto; display: block; }
+  .corp-sep { width: 1px; align-self: stretch; background: var(--color-border-line); }
+  .corp-tit { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 260px; }
+  .corp-area { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--color-fg-muted); }
+  .corp-nom { font-family: var(--font-anthropic-serif); font-size: 24px; line-height: 1.15; color: var(--color-fg); margin: 0; font-weight: 400; }
+  .corp-der { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 12.5px; color: var(--color-fg-muted); }
+  .corp-der b { color: var(--color-fg); font-variant-numeric: tabular-nums; }
+  @media (max-width: 560px) { .corp-sep { display: none; } .corp-der { align-items: flex-start; } .corp-logo img { height: 32px; } }
+  .gate-logo { height: 44px; width: auto; align-self: flex-start; }
   .salir { font: inherit; font-size: 12px; background: none; border: 0; color: var(--color-fg-muted); text-decoration: underline; cursor: pointer; padding: 0; }
 </style>
 </head>
 <body>
 <div class="gate" id="gate">
   <form id="gate-form" autocomplete="off">
-    <h1>Backlog de materiales · PVIC</h1>
-    <p>Los datos están cifrados. Escriba la contraseña de la página para verlos.</p>
+    <img class="gate-logo logo-cla" src="logo-negro.png" alt="Volcan">
+    <img class="gate-logo logo-osc" src="logo-blanco.png" alt="Volcan">
+    <h1>Backlog de materiales</h1>
+    <p>Mantenimiento Mecánico · Planta Victoria. Ingrese la contraseña.</p>
     <input type="password" id="gate-pwd" placeholder="Contraseña" aria-label="Contraseña" autofocus>
     <label><input type="checkbox" id="gate-rec"> Recordar en este equipo</label>
     <button type="submit" id="gate-btn">Ver datos</button>
@@ -100,6 +115,20 @@
     window.addEventListener('resize', () => { if (Math.abs(window.innerWidth - w) > 20) { w = window.innerWidth; dash._todo(); } });
   })();
 </script>
+<header class="corp">
+  <div class="corp-in">
+    <span class="corp-logo"><img class="logo-cla" src="logo-negro.png" alt="Volcan"><img class="logo-osc" src="logo-blanco.png" alt="Volcan"></span>
+    <span class="corp-sep" aria-hidden="true"></span>
+    <div class="corp-tit">
+      <span class="corp-area">Mantenimiento Mecánico Planta · Planta Victoria</span>
+      <h1 class="corp-nom">Backlog de materiales</h1>
+    </div>
+    <div class="corp-der">
+      <span>Corte SAP: <b data-draw="corte">—</b></span>
+      <button type="button" class="salir" id="olvidar">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
 <div id="dash-root">
 <style>
   .bk { display: flex; flex-direction: column; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); color: var(--color-fg); }
@@ -189,9 +218,7 @@
 
 <div class="bk">
   <header class="bk-head" id="resumen">
-    <h1 class="bk-title">Backlog de materiales · Planta Victoria</h1>
     <p class="bk-lead" data-read lang="es">Hay <b data-draw="l-abiertas" data-source="kpis" data-field="abiertas" data-row="0">—</b> líneas de compra abiertas de un total de <b data-draw="l-total" data-source="kpis" data-field="total" data-row="0">—</b>. <b data-draw="l-sinoc" data-source="kpis" data-field="sin_oc" data-row="0">—</b> todavía no tienen OC, y <b data-draw="l-sinoc60" data-source="kpis" data-field="sin_oc_60" data-row="0">—</b> de ellas tienen la SolPed creada hace más de 60 días. <b data-draw="l-venc" data-source="kpis" data-field="oc_vencidas" data-row="0">—</b> OC tienen la fecha de entrega vencida, con un atraso máximo de <b data-draw="l-max" data-source="kpis" data-field="max_atraso" data-row="0">—</b> días.</p>
-    <p class="bk-meta">Datos SAP al <span data-draw="corte" data-source="kpis" data-field="corte" data-row="0">—</span> · OT con revisión BLC_PVIC y SolPed del Registro de backlog · ZPEMM070 (ACAR, PVIC, CTCA) · Haga clic en cualquier gráfico, porción o leyenda para filtrar toda la página.</p>
   </header>
 
   <div class="bk-bar" id="filtros" role="region" aria-label="Filtros">
@@ -211,7 +238,6 @@
     <button type="button" class="bk-kpi" id="kpi-abiertas" data-grupo="">
       <span class="bk-kpi-label">Líneas abiertas</span>
       <span class="bk-kpi-num" data-draw="k-abiertas" data-source="kpis" data-field="abiertas" data-row="0">—</span>
-      <span class="bk-kpi-note">sin entrega final ni borrado</span>
     </button>
     <button type="button" class="bk-kpi is-warn" id="kpi-sinoc" data-grupo="sin_oc">
       <span class="bk-kpi-label">Sin OC</span>
@@ -221,7 +247,6 @@
     <button type="button" class="bk-kpi is-bad" id="kpi-sinoc60" data-grupo="sin_oc_60">
       <span class="bk-kpi-label">Sin OC hace más de 60 días</span>
       <span class="bk-kpi-num" data-draw="k-sinoc60" data-source="kpis" data-field="sin_oc_60" data-row="0">—</span>
-      <span class="bk-kpi-note">SolPed creada hace más de 60 días y aún sin OC</span>
     </button>
     <button type="button" class="bk-kpi is-bad" id="kpi-vencidas" data-grupo="oc_vencida">
       <span class="bk-kpi-label">OC vencidas</span>
@@ -231,36 +256,32 @@
     <button type="button" class="bk-kpi" id="kpi-pronto" data-grupo="llega_pronto">
       <span class="bk-kpi-label">Llegan en 7 días o menos</span>
       <span class="bk-kpi-num" data-draw="k-pronto" data-source="kpis" data-field="llega_pronto" data-row="0">—</span>
-      <span class="bk-kpi-note">según la fecha comprometida de la OC</span>
     </button>
   </section>
 
   <section class="bk-grid" id="distribucion">
     <article class="bk-card" id="card-responsable">
       <h2>¿Quién tiene que actuar?</h2>
-      <p class="bk-sub">Responsable de la etapa en la que está cada línea. Haga clic en una porción para ver sus líneas abajo.</p>
       <div class="bk-chart" data-draw="pie-responsable" data-source="materiales" role="img" aria-label="Gráfico circular de líneas por responsable"></div>
     </article>
     <article class="bk-card" id="card-semaforo">
       <h2>Semáforo</h2>
-      <p class="bk-sub">Rojo: OC vencida, o más de 60 días en la misma etapa. Ámbar: más de 30 días. Llega pronto: la OC vence en 7 días o menos.</p>
+      <p class="bk-sub">Rojo: OC vencida o &gt; 60 d en la etapa · Ámbar: &gt; 30 d · Llega pronto: ≤ 7 d</p>
       <div class="bk-chart" data-draw="pie-semaforo" data-source="materiales" role="img" aria-label="Gráfico circular de líneas por color de semáforo"></div>
     </article>
   </section>
 
   <section class="bk-sechead" id="sin-oc">
-    <h2 class="bk-h2">Líneas sin OC: ¿cuánto llevan esperando?</h2>
-    <p class="bk-sub">Días desde que se creó la SolPed hasta la fecha de corte, para las líneas que aún no tienen pedido de compra. Sirve para saber a quién llamar y desde cuándo está detenido.</p>
+    <h2 class="bk-h2">Líneas sin OC</h2>
   </section>
   <section class="bk-grid" id="sin-oc-graficos">
     <article class="bk-card" id="card-sinoc-tramos">
       <h3>Sin OC por responsable y días desde la SolPed</h3>
-      <p class="bk-sub">Jefatura: liberar la SolPed. Logística: crear la RLM. Compras: emitir la OC.</p>
+      <p class="bk-sub">Jefatura: liberar · Logística: RLM · Compras: OC</p>
       <div class="bk-chart" data-draw="bar-sinoc" data-source="materiales" role="img" aria-label="Barras apiladas de líneas sin OC por responsable y días desde la SolPed"></div>
     </article>
     <article class="bk-card" id="card-sinoc-lista">
       <h3>Las 10 líneas sin OC más antiguas</h3>
-      <p class="bk-sub">Ordenadas por días desde la SolPed. Respeta los filtros de arriba.</p>
       <div class="bk-tablewrap">
         <table class="bk-table" data-source="materiales" data-row-key="clave" aria-label="Líneas sin OC más antiguas">
           <thead>
@@ -282,31 +303,26 @@
   <section class="bk-grid" id="etapas">
     <article class="bk-card" id="card-estado">
       <h2>Líneas por etapa de compra</h2>
-      <p class="bk-sub">De la SolPed recién creada (arriba) a la OC esperando entrega (abajo).</p>
       <div class="bk-chart" data-draw="bar-estado" data-source="materiales" role="img" aria-label="Barras de líneas por etapa de compra"></div>
     </article>
     <article class="bk-card" id="card-aging">
       <h2>Días en la etapa actual, por responsable</h2>
-      <p class="bk-sub">Cuánto lleva cada línea en la etapa en la que está ahora.</p>
       <div class="bk-chart" data-draw="bar-aging" data-source="materiales" role="img" aria-label="Barras apiladas de días en la etapa por responsable"></div>
     </article>
   </section>
 
   <article class="bk-card" id="card-fechas">
     <h2>Fechas comprometidas de entrega por mes</h2>
-    <p class="bk-sub">OC abiertas según el mes de su fecha de entrega. A la izquierda de «Hoy», lo que debió llegar y no llegó. Haga clic en una columna para ver ese mes.</p>
     <div class="bk-chart tall" data-draw="col-meses" data-source="materiales" role="img" aria-label="Columnas de OC abiertas por mes de entrega comprometida, vencidas y en plazo"></div>
   </article>
 
   <article class="bk-card" id="card-top">
     <h2>Las 12 OC más atrasadas</h2>
-    <p class="bk-sub">Días entre la fecha comprometida y la fecha de corte. Haga clic en un punto para ver esa OC en la tabla.</p>
     <div class="bk-chart tall" data-draw="top-atraso" data-source="materiales" role="img" aria-label="Barras de las OC con más días de atraso"></div>
   </article>
 
   <article class="bk-card" id="card-detalle">
     <h2>Líneas de la selección</h2>
-    <p class="bk-sub">Todas las líneas que cumplen los filtros activos. Haga clic en un título de columna para ordenar.</p>
     <div class="bk-tablewrap">
       <table class="bk-table" id="tabla-detalle" data-source="materiales" data-row-key="clave" aria-label="Detalle de líneas de la selección">
         <thead>
@@ -337,7 +353,7 @@
   </article>
 
   <details class="bk-foot" id="definiciones">
-    <summary>Cómo se calcula cada número (igual que en Power BI)</summary>
+    <summary>Definiciones</summary>
     <dl>
       <dt>Línea</dt><dd>Una posición de SolPed con su OC (si tiene). Clave: SolPed-Pos-OC.</dd>
       <dt>Línea abierta</dt><dd>Estado distinto de «0. Borrado» y de «6. Entregado».</dd>
@@ -840,7 +856,6 @@
   });
 </script>
 
-<p class="bk-meta" style="margin-top:24px">Página publicada automáticamente por el macro «Actualizar desde SAP» (BD_Materiales_Backlog.xlsm). Datos cifrados con AES-256; se descifran solo en este navegador. <button type="button" class="salir" id="olvidar">Olvidar la contraseña en este equipo</button></p>
 </div>
 <script>
   // ---------- descifrado: clave = SHA-256(sal + contraseña), luego SHA-256 iterado; AES-256-CBC ----------
